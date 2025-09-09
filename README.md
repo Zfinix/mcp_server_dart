@@ -3,6 +3,9 @@
   <source media="(prefers-color-scheme: light)" srcset="logo-light.svg">
   <img alt="MCP Dart Framework" src="logo-light.svg" width="400">
 </picture>
+</br>
+</br>
+
 
 [![Dart](https://img.shields.io/badge/Dart-3.9%2B-blue.svg)](https://dart.dev)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2025--06--18-green.svg)](https://modelcontextprotocol.io/)
