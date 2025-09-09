@@ -1,3 +1,16 @@
+## 1.0.1
+
+- 🔧 **Fixed origin validation**: Resolved production deployment issues with CORS origin checking
+- 🏗️ **Modular architecture**: Split monolithic server file into focused modules for better maintainability
+- ⚙️ **Configurable origin validation**: Added `allowLocalhost` and `validateOrigins` parameters for flexible security
+- 🧹 **Code organization**: Separated concerns into `middleware.dart`, `http_handlers.dart`, `session_manager.dart`, and `server_utils.dart`
+- 📦 **Package name**: Changed from `dart_mcp` to `mcp_server_dart` for better pub.dev availability
+- 🔒 **Enhanced security**: Better HTTPS origin support and customizable allowed origins
+
+### Breaking Changes
+- Package name changed from `dart_mcp` to `mcp_server_dart`
+- Origin validation now allows HTTPS origins by default (can be disabled with `validateOrigins: false`)
+
 ## 1.0.0
 
 - 🚀 **Initial release** of MCP Dart Framework

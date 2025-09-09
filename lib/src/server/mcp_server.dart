@@ -4,13 +4,16 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:logging/logging.dart';
 import 'package:relic/io_adapter.dart' as io_adapter;
 import 'package:relic/relic.dart';
 
 import 'package:mcp_server_dart/src/protocol/types.dart';
+import 'http_handlers.dart';
+import 'middleware.dart';
+import 'session_manager.dart';
+import 'server_utils.dart';
 
 // Re-export for generated code
 export 'package:mcp_server_dart/src/protocol/types.dart'
@@ -42,7 +45,53 @@ abstract class MCPServer {
   final String version;
   final String? description;
 
-  MCPServer({required this.name, this.version = '1.0.0', this.description});
+  /// Allowed origins for CORS validation
+  final List<String> allowedOrigins;
+
+  /// Whether to validate origins (set to false to disable origin checking)
+  final bool validateOrigins;
+
+  /// Whether to allow localhost origins by default (can be disabled for strict production)
+  final bool allowLocalhost;
+
+  /// Connection tracking for health monitoring
+  final Set<WebSocket> _activeConnections = <WebSocket>{};
+  RelicServer? _server;
+  Timer? _connectionMonitor;
+  late final DateTime _startTime;
+
+  /// Session manager
+  late final SessionManager _sessionManager;
+
+  /// HTTP handlers
+  late final HttpHandlers _httpHandlers;
+
+  MCPServer({
+    required this.name,
+    this.version = '1.0.0',
+    this.description,
+    this.allowedOrigins = const [],
+    this.validateOrigins = true,
+    this.allowLocalhost = true,
+  }) {
+    _sessionManager = SessionManager();
+    _startTime = DateTime.now();
+    _httpHandlers = HttpHandlers(
+      serverName: name,
+      serverVersion: version,
+      serverDescription: description,
+      startTime: _startTime,
+      validateOrigins: validateOrigins,
+      allowLocalhost: allowLocalhost,
+      allowedOrigins: allowedOrigins,
+      tools: _tools,
+      resources: _resources,
+      prompts: _prompts,
+      activeConnections: _activeConnections,
+      handleRequest: handleRequest,
+      sessionManager: _sessionManager,
+    );
+  }
 
   /// Register a tool manually (used by generated code)
   void registerTool(
@@ -319,18 +368,6 @@ abstract class MCPServer {
     }
   }
 
-  /// Connection tracking for health monitoring
-  final Set<WebSocket> _activeConnections = <WebSocket>{};
-  RelicServer? _server;
-  Timer? _connectionMonitor;
-  late final DateTime _startTime;
-
-  /// Session management for Streamable HTTP
-  final Map<String, StreamController<String>> _activeSessions = {};
-  final Map<String, DateTime> _sessionTimestamps = {};
-  final Map<String, int> _sessionEventIds = {};
-  static const Duration _sessionTimeout = Duration(minutes: 30);
-
   /// Start production-ready HTTP server with WebSocket support using Relic
   Future<void> serve({
     int port = 8080,
@@ -339,7 +376,6 @@ abstract class MCPServer {
     Duration keepAliveTimeout = const Duration(seconds: 30),
   }) async {
     address ??= InternetAddress.loopbackIPv4;
-    _startTime = DateTime.now();
 
     _logger.info('Starting MCP Server on ${address.address}:$port');
     print('🔥 Starting MCP Server on ${address.address}:$port');
@@ -347,17 +383,18 @@ abstract class MCPServer {
     try {
       // Setup router with health check, status, and MCP endpoints
       final router = Router<Handler>()
-        ..get('/health', respondWith(_healthCheckHandler))
-        ..get('/status', respondWith(_statusHandler))
-        ..get('/ws', respondWith(_webSocketUpgradeHandler))
-        ..get('/mcp', respondWith(_mcpSseHandler))
-        ..post('/mcp', respondWith(_mcpPostHandler));
+        ..get('/health', respondWith(_httpHandlers.healthCheckHandler))
+        ..get('/status', respondWith(_httpHandlers.statusHandler))
+        ..get('/ws', respondWith(_httpHandlers.webSocketUpgradeHandler))
+        ..get('/mcp', respondWith(_httpHandlers.mcpSseHandler))
+        ..get('/sse', respondWith(_httpHandlers.mcpSseHandler))
+        ..post('/mcp', respondWith(_httpHandlers.mcpPostHandler));
 
       // Setup middleware pipeline with proper error handling
       final pipeline = Pipeline()
-          .addMiddleware(_corsMiddleware(enableCors))
-          .addMiddleware(_loggingMiddleware())
-          .addMiddleware(_errorHandlingMiddleware())
+          .addMiddleware(corsMiddleware(enableCors))
+          .addMiddleware(loggingMiddleware(_logger))
+          .addMiddleware(errorHandlingMiddleware(_logger))
           .addMiddleware(routeWith(router));
 
       // Create handler with 404 fallback
@@ -379,7 +416,7 @@ abstract class MCPServer {
       _logger.info('✓ Health check available at http://localhost:$port/health');
 
       // Setup graceful shutdown handling
-      _setupSignalHandlers();
+      ServerUtils.setupSignalHandlers(shutdown);
 
       // Start connection monitoring
       _startConnectionMonitoring(keepAliveTimeout);
@@ -389,340 +426,11 @@ abstract class MCPServer {
     }
   }
 
-  /// Health check endpoint handler
-  Response _healthCheckHandler(Request request) {
-    final healthData = {
-      'status': 'healthy',
-      'timestamp': DateTime.now().toIso8601String(),
-      'server': name,
-      'version': version,
-      'connections': _activeConnections.length,
-      'tools': _tools.length,
-      'resources': _resources.length,
-      'prompts': _prompts.length,
-    };
-
-    return Response.ok(
-      body: Body.fromString(jsonEncode(healthData), mimeType: MimeType.json),
-      headers: Headers.fromMap({
-        'content-type': ['application/json'],
-      }),
-    );
-  }
-
-  /// Server status endpoint handler
-  Response _statusHandler(Request request) {
-    final statusData = {
-      'server': {'name': name, 'version': version, 'description': description},
-      'capabilities': {
-        'tools': _tools.keys.toList(),
-        'resources': _resources.keys.toList(),
-        'prompts': _prompts.keys.toList(),
-      },
-      'metrics': {
-        'active_connections': _activeConnections.length,
-        'uptime': DateTime.now().difference(_startTime).inSeconds,
-      },
-    };
-
-    return Response.ok(
-      body: Body.fromString(jsonEncode(statusData), mimeType: MimeType.json),
-      headers: Headers.fromMap({
-        'content-type': ['application/json'],
-      }),
-    );
-  }
-
-  /// WebSocket upgrade handler (placeholder - WebSocket support to be added)
-  Response _webSocketUpgradeHandler(Request request) {
-    // For now, return a message indicating WebSocket support is coming
-    return Response.notImplemented(
-      body: Body.fromString('WebSocket support coming soon'),
-      headers: Headers.fromMap({
-        'content-type': ['text/plain'],
-      }),
-    );
-  }
-
-  /// MCP POST handler for Streamable HTTP transport
-  Future<Response> _mcpPostHandler(Request request) async {
-    try {
-      // Validate Origin header for security
-      final origin = request.headers['origin']?.first;
-      if (origin != null && !_isValidOrigin(origin)) {
-        return Response.forbidden(body: Body.fromString('Invalid origin'));
-      }
-
-      // Check for session ID
-      final sessionId = request.headers['mcp-session-id']?.first;
-
-      // Parse JSON-RPC message from body
-      final bodyBytes = <int>[];
-      await for (final chunk in request.body.read()) {
-        bodyBytes.addAll(chunk);
-      }
-      final bodyString = utf8.decode(bodyBytes);
-      final jsonData = jsonDecode(bodyString);
-      final mcpRequest = MCPRequest.fromJson(jsonData);
-
-      // Handle initialization specially to potentially create session
-      if (mcpRequest.method == 'initialize') {
-        final response = await handleRequest(mcpRequest);
-        final responseJson = response.toJson();
-
-        // Create session ID for this client if not provided
-        String? newSessionId;
-        if (sessionId == null) {
-          newSessionId = _generateSessionId();
-          _sessionTimestamps[newSessionId] = DateTime.now();
-          _sessionEventIds[newSessionId] = 0;
-        }
-
-        final headers = Headers.fromMap({
-          'content-type': ['application/json'],
-          'mcp-protocol-version': ['2025-06-18'],
-          if (newSessionId != null) 'mcp-session-id': [newSessionId],
-        });
-
-        return Response.ok(
-          body: Body.fromString(
-            jsonEncode(responseJson),
-            mimeType: MimeType.json,
-          ),
-          headers: headers,
-        );
-      }
-
-      // Validate session for non-initialization requests
-      if (sessionId != null) {
-        if (!_isValidSession(sessionId)) {
-          return Response.notFound(
-            body: Body.fromString('Session not found or expired'),
-          );
-        }
-        _sessionTimestamps[sessionId] = DateTime.now(); // Update timestamp
-      }
-
-      // // For non-initialize requests, check if SSE is requested
-      // final acceptHeader = request.headers['accept']?.first ?? '';
-      // if (acceptHeader.contains('text/event-stream')) {
-      //   // Use SSE response for streaming
-      //   return _createSseResponse(mcpRequest, sessionId);
-      // }
-
-      // Return JSON response by default
-      final response = await handleRequest(mcpRequest);
-      return Response.ok(
-        body: Body.fromString(
-          jsonEncode(response.toJson()),
-          mimeType: MimeType.json,
-        ),
-        headers: Headers.fromMap({
-          'content-type': ['application/json'],
-          'mcp-protocol-version': ['2025-06-18'],
-        }),
-      );
-    } catch (e, stackTrace) {
-      _logger.severe('Error in MCP POST handler: $e', e, stackTrace);
-      return Response.badRequest(
-        body: Body.fromString(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'error': {'code': -32700, 'message': 'Parse error: $e'},
-          }),
-          mimeType: MimeType.json,
-        ),
-        headers: Headers.fromMap({
-          'content-type': ['application/json'],
-        }),
-      );
-    }
-  }
-
-  /// MCP GET handler for SSE streams
-  Response _mcpSseHandler(Request request) {
-    try {
-      // Validate Origin header for security
-      final origin = request.headers['origin']?.first;
-      if (origin != null && !_isValidOrigin(origin)) {
-        return Response.forbidden(body: Body.fromString('Invalid origin'));
-      }
-
-      // Check Accept header
-      final acceptHeader = request.headers['accept']?.first ?? '';
-      if (!acceptHeader.contains('text/event-stream')) {
-        return Response(
-          405,
-          body: Body.fromString(
-            'Method Not Allowed - requires text/event-stream',
-          ),
-          headers: Headers.fromMap({
-            'allow': ['POST'],
-          }),
-        );
-      }
-
-      // Create SSE stream for server-initiated messages
-      final controller = StreamController<String>();
-      final sessionId = _generateSessionId();
-
-      _activeSessions[sessionId] = controller;
-      _sessionTimestamps[sessionId] = DateTime.now();
-      _sessionEventIds[sessionId] = 0;
-
-      // Setup stream cleanup
-      controller.onCancel = () {
-        _activeSessions.remove(sessionId);
-        _sessionTimestamps.remove(sessionId);
-        _sessionEventIds.remove(sessionId);
-      };
-
-      // Send initial connection event
-      _sendSseEvent(controller, 'connected', {
-        'sessionId': sessionId,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
-
-      return Response.ok(
-        body: Body.fromDataStream(
-          controller.stream.map(
-            (data) => Uint8List.fromList(utf8.encode(data)),
-          ),
-          mimeType: MimeType.parse('text/event-stream'),
-        ),
-        headers: Headers.fromMap({
-          'content-type': ['text/event-stream'],
-          'cache-control': ['no-cache'],
-          'connection': ['keep-alive'],
-          'access-control-allow-origin': ['*'],
-          'mcp-protocol-version': ['2025-06-18'],
-          'mcp-session-id': [sessionId],
-        }),
-      );
-    } catch (e, stackTrace) {
-      _logger.severe('Error in MCP SSE handler: $e', e, stackTrace);
-      return Response.internalServerError(
-        body: Body.fromString('Internal server error'),
-      );
-    }
-  }
-
-  /// CORS middleware
-  Middleware _corsMiddleware(bool enabled) {
-    return (Handler innerHandler) {
-      return (NewContext context) async {
-        if (!enabled) return await innerHandler(context);
-
-        final request = context.request;
-
-        // Handle preflight requests
-        if (request.method == RequestMethod.options) {
-          return context.respond(
-            Response.ok(
-              headers: Headers.fromMap({
-                'Access-Control-Allow-Origin': ['*'],
-                'Access-Control-Allow-Methods': ['GET, POST, OPTIONS'],
-                'Access-Control-Allow-Headers': ['Content-Type, Authorization'],
-                'Access-Control-Max-Age': ['86400'],
-              }),
-            ),
-          );
-        }
-
-        // Process request and add CORS headers to response
-        final result = await innerHandler(context);
-        if (result is ResponseContext) {
-          return result.respond(
-            result.response.copyWith(
-              headers: result.response.headers.transform((mh) {
-                mh['Access-Control-Allow-Origin'] = ['*'];
-              }),
-            ),
-          );
-        }
-        return result;
-      };
-    };
-  }
-
-  /// Logging middleware
-  Middleware _loggingMiddleware() {
-    return (Handler innerHandler) {
-      return (NewContext context) async {
-        final stopwatch = Stopwatch()..start();
-        final request = context.request;
-
-        _logger.info(
-          '${request.method.value.toUpperCase()} ${request.url.path}',
-        );
-
-        try {
-          final result = await innerHandler(context);
-          stopwatch.stop();
-
-          if (result is ResponseContext) {
-            _logger.info(
-              '${request.method.value.toUpperCase()} ${request.url.path} '
-              '${result.response.statusCode} ${stopwatch.elapsedMilliseconds}ms',
-            );
-          }
-
-          return result;
-        } catch (e) {
-          stopwatch.stop();
-          _logger.warning(
-            '${request.method.value.toUpperCase()} ${request.url.path} '
-            'ERROR ${stopwatch.elapsedMilliseconds}ms: $e',
-          );
-          rethrow;
-        }
-      };
-    };
-  }
-
-  /// Error handling middleware
-  Middleware _errorHandlingMiddleware() {
-    return (Handler innerHandler) {
-      return (NewContext context) async {
-        try {
-          return await innerHandler(context);
-        } catch (e, stackTrace) {
-          _logger.severe(
-            'Unhandled error in request handler: $e',
-            e,
-            stackTrace,
-          );
-
-          return context.respond(
-            Response.internalServerError(
-              body: Body.fromString('Internal server error'),
-            ),
-          );
-        }
-      };
-    };
-  }
-
-  /// Setup signal handlers for graceful shutdown
-  void _setupSignalHandlers() {
-    ProcessSignal.sigint.watch().listen((_) async {
-      _logger.info('Received SIGINT, shutting down gracefully...');
-      await shutdown();
-      exit(0);
-    });
-
-    ProcessSignal.sigterm.watch().listen((_) async {
-      _logger.info('Received SIGTERM, shutting down gracefully...');
-      await shutdown();
-      exit(0);
-    });
-  }
-
   /// Start connection monitoring and cleanup
   void _startConnectionMonitoring(Duration keepAliveTimeout) {
     _connectionMonitor = Timer.periodic(keepAliveTimeout, (timer) {
       _cleanupStaleConnections();
-      _cleanupExpiredSessions();
+      _sessionManager.cleanupExpiredSessions();
     });
   }
 
@@ -746,145 +454,6 @@ abstract class MCPServer {
     }
   }
 
-  /// Helper methods for Streamable HTTP support
-
-  /// Generate a cryptographically secure session ID
-  String _generateSessionId() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = DateTime.now().microsecond;
-    return 'mcp_${timestamp}_${random.toRadixString(16)}';
-  }
-
-  /// Validate if a session is still active and not expired
-  bool _isValidSession(String sessionId) {
-    final timestamp = _sessionTimestamps[sessionId];
-    if (timestamp == null) return false;
-
-    final now = DateTime.now();
-    return now.difference(timestamp) < _sessionTimeout;
-  }
-
-  /// Validate origin header for security (basic implementation)
-  bool _isValidOrigin(String origin) {
-    // For localhost development, allow localhost origins
-    if (origin.startsWith('http://localhost') ||
-        origin.startsWith('http://127.0.0.1')) {
-      return true;
-    }
-
-    // In production, you should validate against allowed origins
-    // For now, reject all non-localhost origins for security
-    return false;
-  }
-
-  /// Create SSE response with JSON-RPC message
-  // ignore: unused_element
-  Response _createSseResponse(MCPRequest request, String? sessionId) {
-    final controller = StreamController<String>();
-
-    // Process request asynchronously and stream the response
-    _processRequestForSse(request, controller, sessionId);
-
-    return Response.ok(
-      body: Body.fromDataStream(
-        controller.stream.map((data) => Uint8List.fromList(utf8.encode(data))),
-        mimeType: MimeType.parse('text/event-stream'),
-      ),
-      headers: Headers.fromMap({
-        'content-type': ['text/event-stream'],
-        'cache-control': ['no-cache'],
-        'connection': ['keep-alive'],
-        'access-control-allow-origin': ['*'],
-        'mcp-protocol-version': ['2025-06-18'],
-        if (sessionId != null) 'mcp-session-id': [sessionId],
-      }),
-    );
-  }
-
-  /// Process MCP request and send response via SSE
-  Future<void> _processRequestForSse(
-    MCPRequest request,
-    StreamController<String> controller,
-    String? sessionId,
-  ) async {
-    try {
-      final response = await handleRequest(request);
-      final eventId = sessionId != null ? _getNextEventId(sessionId) : null;
-
-      _sendSseEvent(
-        controller,
-        'message',
-        response.toJson(),
-        eventId: eventId?.toString(),
-      );
-
-      // Close stream after sending response
-      await controller.close();
-    } catch (e) {
-      _sendSseEvent(controller, 'error', {
-        'jsonrpc': '2.0',
-        'id': request.id,
-        'error': {'code': -32603, 'message': 'Internal error: $e'},
-      });
-      await controller.close();
-    }
-  }
-
-  /// Send an SSE event
-  void _sendSseEvent(
-    StreamController<String> controller,
-    String event,
-    Map<String, dynamic> data, {
-    String? eventId,
-  }) {
-    final buffer = StringBuffer();
-
-    if (eventId != null) {
-      buffer.writeln('id: $eventId');
-    }
-    buffer.writeln('event: $event');
-    buffer.writeln('data: ${jsonEncode(data)}');
-    buffer.writeln(); // Empty line to end the event
-
-    if (!controller.isClosed) {
-      controller.add(buffer.toString());
-    }
-  }
-
-  /// Get next event ID for a session
-  int _getNextEventId(String sessionId) {
-    final currentId = _sessionEventIds[sessionId] ?? 0;
-    final nextId = currentId + 1;
-    _sessionEventIds[sessionId] = nextId;
-    return nextId;
-  }
-
-  /// Clean up expired sessions
-  void _cleanupExpiredSessions() {
-    final now = DateTime.now();
-    final expiredSessions = <String>[];
-
-    for (final entry in _sessionTimestamps.entries) {
-      if (now.difference(entry.value) > _sessionTimeout) {
-        expiredSessions.add(entry.key);
-      }
-    }
-
-    for (final sessionId in expiredSessions) {
-      final controller = _activeSessions.remove(sessionId);
-      _sessionTimestamps.remove(sessionId);
-      _sessionEventIds.remove(sessionId);
-
-      if (controller != null && !controller.isClosed) {
-        controller.close();
-      }
-    }
-
-    if (expiredSessions.isNotEmpty) {
-      _logger.info('Cleaned up ${expiredSessions.length} expired sessions');
-    }
-  }
-
   /// Graceful shutdown
   Future<void> shutdown() async {
     _logger.info('Shutting down MCP Server...');
@@ -903,22 +472,8 @@ abstract class MCPServer {
       _logger.info('Closed ${futures.length} WebSocket connections');
     }
 
-    // Close all active SSE sessions
-    final sessFutures = <Future>[];
-    for (final controller in _activeSessions.values) {
-      if (!controller.isClosed) {
-        sessFutures.add(controller.close());
-      }
-    }
-
-    if (sessFutures.isNotEmpty) {
-      await Future.wait(sessFutures, eagerError: false);
-      _logger.info('Closed ${sessFutures.length} SSE sessions');
-    }
-
-    _activeSessions.clear();
-    _sessionTimestamps.clear();
-    _sessionEventIds.clear();
+    // Close all SSE sessions
+    await _sessionManager.closeAllSessions();
 
     // Close Relic server
     if (_server != null) {
