@@ -1,3 +1,9 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="logo-light.svg">
+  <img alt="MCP Dart Framework" src="logo-light.svg" width="400">
+</picture>
+
 # 🚀 MCP Dart Framework
 
 A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **annotations** and **code generation**. Build MCP servers as easily as annotating methods with `@MCPTool`, `@MCPResource`, or `@MCPPrompt` - similar to how `json_serializable` or `freezed` works.
