@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="@https://raw.githubusercontent.com/Zfinix/dart_mcp/main/logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="@https://raw.githubusercontent.com/Zfinix/dart_mcp/main/logo-light.svg">
-  <img alt="MCP Dart Framework" src="@https://raw.githubusercontent.com/Zfinix/dart_mcp/main/image.png" width="400">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Zfinix/dart_mcp/main/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Zfinix/dart_mcp/main/logo-light.svg">
+  <img alt="MCP Dart Framework" src="https://raw.githubusercontent.com/Zfinix/dart_mcp/main/image.png" width="400">
 </picture>
 </br>
 </br>
