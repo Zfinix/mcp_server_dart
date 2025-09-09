@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   # MCP Dart framework - in a real project this would be a pub.dev dependency
-  dart_mcp:
+  mcp_server_dart:
     path: ../
   
   # Core dependencies for examples

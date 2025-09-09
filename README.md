@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Zfinix/dart_mcp/main/logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Zfinix/dart_mcp/main/logo-light.svg">
-  <img alt="MCP Dart Framework" src="https://raw.githubusercontent.com/Zfinix/dart_mcp/main/image.png" width="400">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Zfinix/mcp_server_dart/main/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Zfinix/mcp_server_dart/main/logo-light.svg">
+  <img alt="MCP Dart Framework" src="https://raw.githubusercontent.com/Zfinix/mcp_server_dart/main/image.png" width="400">
 </picture>
 </br>
 </br>
@@ -12,7 +12,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-![MCP Dart Framework](https://raw.githubusercontent.com/Zfinix/dart_mcp/main/image.png)
+![MCP Dart Framework](https://raw.githubusercontent.com/Zfinix/mcp_server_dart/main/image.png)
 
 A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **annotations** and **code generation**. Build MCP servers as easily as annotating methods with `@MCPTool`, `@MCPResource`, or `@MCPPrompt` - similar to how `json_serializable` or `freezed` works.
 
@@ -36,7 +36,7 @@ A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **
 
 ```yaml
 dependencies:
-  dart_mcp: ^1.0.0
+  mcp_server_dart: ^1.0.0
   relic: ^0.5.0  # Modern HTTP framework
   logging: ^1.3.0  # For server logging
 
@@ -47,7 +47,7 @@ dev_dependencies:
 ### 2. Create Your MCP Server
 
 ```dart
-import 'package:dart_mcp/dart_mcp.dart';
+import 'package:mcp_server_dart/mcp_server_dart.dart';
 
 part 'my_server.g.dart'; // Generated file
 

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:test/test.dart';
-import 'package:dart_mcp/dart_mcp.dart';
+import 'package:mcp_server_dart/mcp_server_dart.dart';
 
 /// Test implementation of MCPServer
 class TestMCPServer extends MCPServer {

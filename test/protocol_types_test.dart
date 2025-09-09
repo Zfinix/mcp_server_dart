@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_mcp/dart_mcp.dart';
+import 'package:mcp_server_dart/mcp_server_dart.dart';
 
 void main() {
   group('MCPRequest', () {

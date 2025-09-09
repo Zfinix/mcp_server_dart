@@ -6,7 +6,7 @@
 import 'dart:math';
 
 import 'package:logging/logging.dart';
-import 'package:dart_mcp/dart_mcp.dart';
+import 'package:mcp_server_dart/mcp_server_dart.dart';
 
 part 'google_maps.g.dart';
 

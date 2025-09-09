@@ -5,7 +5,7 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:logging/logging.dart';
-import 'package:dart_mcp/src/annotations.dart';
+import 'package:mcp_server_dart/src/annotations.dart';
 import 'package:source_gen/source_gen.dart';
 
 /// Builder function for build.yaml

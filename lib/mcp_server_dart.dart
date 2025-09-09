@@ -6,7 +6,7 @@
 ///
 /// Example usage:
 /// ```dart
-/// import 'package:dart_mcp/dart_mcp.dart';
+/// import 'package:mcp_server_dart/mcp_server_dart.dart';
 ///
 /// class MyMCPServer extends MCPServer {
 ///   MyMCPServer() : super(name: 'my-server', version: '1.0.0');

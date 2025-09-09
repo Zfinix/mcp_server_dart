@@ -10,10 +10,11 @@ import 'package:logging/logging.dart';
 import 'package:relic/io_adapter.dart' as io_adapter;
 import 'package:relic/relic.dart';
 
-import 'package:dart_mcp/src/protocol/types.dart';
+import 'package:mcp_server_dart/src/protocol/types.dart';
 
 // Re-export for generated code
-export 'package:dart_mcp/src/protocol/types.dart' show MCPResourceContent;
+export 'package:mcp_server_dart/src/protocol/types.dart'
+    show MCPResourceContent;
 
 /// Type definitions for handlers
 typedef MCPToolHandler = Future<dynamic> Function(MCPToolContext context);

@@ -1,14 +1,14 @@
 targets:
   $default:
     builders:
-      dart_mcp|mcp_generator:
+      mcp_server_dart|mcp_generator:
         enabled: true
         generate_for:
           - lib/**
 
 builders:
   mcp_generator:
-    import: "package:dart_mcp/src/builder/mcp_generator.dart"
+    import: "package:mcp_server_dart/src/builder/mcp_generator.dart"
     builder_factories: ["mcpBuilder"]
     build_extensions: {".dart": [".g.dart"]}
     auto_apply: dependents
