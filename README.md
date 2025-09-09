@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="logo-light.svg">
-  <img alt="MCP Dart Framework" src="logo-light.svg" width="400">
+  <source media="(prefers-color-scheme: dark)" srcset="@https://raw.githubusercontent.com/Zfinix/dart_mcp/main/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="@https://raw.githubusercontent.com/Zfinix/dart_mcp/main/logo-light.svg">
+  <img alt="MCP Dart Framework" src="@https://raw.githubusercontent.com/Zfinix/dart_mcp/main/image.png" width="400">
 </picture>
 </br>
 </br>
@@ -12,7 +12,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-![MCP Dart Framework](image.png)
+![MCP Dart Framework](https://raw.githubusercontent.com/Zfinix/dart_mcp/main/image.png)
 
 A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **annotations** and **code generation**. Build MCP servers as easily as annotating methods with `@MCPTool`, `@MCPResource`, or `@MCPPrompt` - similar to how `json_serializable` or `freezed` works.
 
