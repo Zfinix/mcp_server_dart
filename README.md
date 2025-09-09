@@ -4,13 +4,15 @@
   <img alt="MCP Dart Framework" src="logo-light.svg" width="400">
 </picture>
 
-# 🚀 MCP Dart Framework
-
-A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **annotations** and **code generation**. Build MCP servers as easily as annotating methods with `@MCPTool`, `@MCPResource`, or `@MCPPrompt` - similar to how `json_serializable` or `freezed` works.
-
 [![Dart](https://img.shields.io/badge/Dart-3.9%2B-blue.svg)](https://dart.dev)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2025--06--18-green.svg)](https://modelcontextprotocol.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
+![MCP Dart Framework](image.png)
+
+A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **annotations** and **code generation**. Build MCP servers as easily as annotating methods with `@MCPTool`, `@MCPResource`, or `@MCPPrompt` - similar to how `json_serializable` or `freezed` works.
+
 
 ## ✨ Features
 
