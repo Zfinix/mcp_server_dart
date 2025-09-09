@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "hello-world": {
+      "type": "stdio",
+      "command": "dart",
+      "args": ["run", "main.dart", "--example", "hello-world"]
+    },
+    "calculator": {
+      "type": "stdio", 
+      "command": "dart",
+      "args": ["run", "main.dart", "--example", "calculator"]
+    },
+    "weather": {
+      "type": "stdio",
+      "command": "dart", 
+      "args": ["run", "main.dart", "--example", "weather"]
+    },
+    "google-maps": {
+      "type": "stdio",
+      "command": "dart",
+      "args": ["run", "main.dart", "--example", "google-maps"]
+    },
+    "calculator-http": {
+      "type": "streamable-http",
+      "url": "http://localhost:8080/mcp"
+    },
+    "default-server": {
+      "type": "streamable-http",
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}

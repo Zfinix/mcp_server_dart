@@ -1,0 +1,5 @@
+targets:
+  $default:
+    builders:
+      dart_mcp|mcp_generator:
+        enabled: true
