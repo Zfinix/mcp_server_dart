@@ -10,6 +10,11 @@
       "command": "dart",
       "args": ["run", "main.dart", "--example", "calculator"]
     },
+    "calculator-advanced": {
+      "type": "stdio",
+      "command": "dart",
+      "args": ["run", "lib/advanced/calculator_gen.dart"]
+    },
     "weather": {
       "type": "stdio",
       "command": "dart", 
@@ -22,11 +27,11 @@
     },
     "calculator-http": {
       "type": "streamable-http",
-      "url": "http://localhost:8080/mcp"
+      "url": "http://127.0.0.1:8080/mcp"
     },
     "default-server": {
       "type": "streamable-http",
-      "url": "http://localhost:8080/mcp"
+      "url": "http://127.0.0.1:8080/mcp"
     }
   }
 }

@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:relic/io_adapter.dart' as io_adapter;
@@ -71,7 +72,7 @@ abstract class MCPServer {
     this.version = '1.0.0',
     this.description,
     this.allowedOrigins = const [],
-    this.validateOrigins = true,
+    this.validateOrigins = false,
     this.allowLocalhost = true,
   }) {
     _sessionManager = SessionManager();
@@ -91,6 +92,33 @@ abstract class MCPServer {
       handleRequest: handleRequest,
       sessionManager: _sessionManager,
     );
+
+    // Try to automatically call registerGeneratedHandlers if it exists
+    _autoRegisterIfExists();
+  }
+
+  /// Automatically register generated handlers if the method exists
+  void _autoRegisterIfExists() {
+    try {
+      // Use reflection to check if registerGeneratedHandlers method exists
+      final instanceMirror = reflect(this);
+      final classMirror = instanceMirror.type;
+
+      // Look for the registerGeneratedHandlers method
+      final methodSymbol = Symbol('registerGeneratedHandlers');
+
+      if (classMirror.instanceMembers.containsKey(methodSymbol)) {
+        instanceMirror.invoke(methodSymbol, []);
+        _logger.info('✓ Automatically registered generated MCP handlers');
+      } else {
+        _logger.fine(
+          'No generated handlers to auto-register (this is normal for manual servers)',
+        );
+      }
+    } catch (e) {
+      // Some error occurred - might be method doesn't exist or reflection failed
+      _logger.fine('No generated handlers to auto-register: $e');
+    }
   }
 
   /// Register a tool manually (used by generated code)
@@ -146,30 +174,23 @@ abstract class MCPServer {
   /// Handle incoming MCP requests
   Future<MCPResponse> handleRequest(MCPRequest request) async {
     try {
-      switch (request.method) {
-        case 'initialize':
-          return _handleInitialize(request);
-        case 'tools/list':
-          return _handleToolsList(request);
-        case 'tools/call':
-          return await _handleToolCall(request);
-        case 'resources/list':
-          return _handleResourcesList(request);
-        case 'resources/read':
-          return await _handleResourceRead(request);
-        case 'prompts/list':
-          return _handlePromptsList(request);
-        case 'prompts/get':
-          return _handlePromptGet(request);
-        default:
-          return MCPResponse(
-            id: request.id,
-            error: MCPError(
-              code: -32601,
-              message: 'Method not found: ${request.method}',
-            ),
-          );
-      }
+      return switch (request.method) {
+        'initialize' => _handleInitialize(request),
+        'tools/list' => _handleToolsList(request),
+        'tools/call' => await _handleToolCall(request),
+        'resources/list' => _handleResourcesList(request),
+        'resources/read' => await _handleResourceRead(request),
+        'prompts/list' => _handlePromptsList(request),
+        'prompts/get' => _handlePromptGet(request),
+        'ping' => _handlePing(request),
+        _ => MCPResponse(
+          id: request.id,
+          error: MCPError(
+            code: -32601,
+            message: 'Method not found: ${request.method}',
+          ),
+        ),
+      };
     } catch (e, stackTrace) {
       _logger.severe('Error handling request: $e', e, stackTrace);
       return MCPResponse(
@@ -196,6 +217,14 @@ abstract class MCPServer {
           if (description != null) 'description': description,
         },
       },
+    );
+  }
+
+  /// Handle ping request for health checking
+  MCPResponse _handlePing(MCPRequest request) {
+    return MCPResponse(
+      id: request.id,
+      result: {'status': 'ok', 'timestamp': DateTime.now().toIso8601String()},
     );
   }
 
@@ -475,7 +504,6 @@ abstract class MCPServer {
     // Close all SSE sessions
     await _sessionManager.closeAllSessions();
 
-    // Close Relic server
     if (_server != null) {
       await _server!.close();
       _logger.info('Relic server closed');
@@ -483,6 +511,10 @@ abstract class MCPServer {
 
     _logger.info('✓ MCP Server shutdown complete');
   }
+
+  /// Start the MCP server on stdio (for CLI usage)
+
+  Future<void> stdio() => start();
 
   /// Start the MCP server on stdio (for CLI usage)
   Future<void> start() async {

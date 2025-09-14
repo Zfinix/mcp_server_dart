@@ -273,7 +273,7 @@ void main() async {
       print('Stack trace: ${record.stackTrace}');
     }
   });
-  server.registerGeneratedHandlers();
+  server.showUsage();
 
   print('🗺️  Google Maps MCP Server');
   print(

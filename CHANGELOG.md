@@ -1,3 +1,22 @@
+## 1.1.0
+
+- 🚀 **Auto-registration**: Automatic handler registration using reflection - no need to manually call `registerGeneratedHandlers()`
+- 🔧 **Enhanced code generation**: Improved MCP generator with better parameter extraction and JSON schema generation
+- 📋 **Smarter annotations**: Code generator now uses annotation names instead of method names for tool/resource/prompt registration
+- 🏥 **Health check**: Added `ping` method support for health monitoring
+- 🔄 **Protocol upgrade**: Updated to MCP protocol version 2025-06-18
+- 🎯 **Better validation**: Improved input schema generation from method parameters with proper type mapping
+- 📚 **Enhanced documentation**: Generated code includes better descriptions from annotations
+- 🛠️ **New examples**: Added advanced calculator example with comprehensive tool demonstrations
+- 🔗 **Improved usability**: Added `stdio()` method as alias for `start()` for better clarity
+- ⚙️ **Configuration updates**: Updated MCP config with localhost to 127.0.0.1 for better compatibility
+- 🧹 **Code cleanup**: Removed excessive comments from generated code for cleaner output
+
+### Breaking Changes
+- Protocol version updated from `2024-11-05` to `2025-06-18`
+- Generated handlers now use annotation names instead of method names by default
+- Origin validation now defaults to `false` instead of `true` for easier development
+
 ## 1.0.1
 
 - 🔧 **Fixed origin validation**: Resolved production deployment issues with CORS origin checking

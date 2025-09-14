@@ -93,16 +93,7 @@ part of '$sourceFile';
 /// class and run `dart run build_runner build` to regenerate.
 extension ${className}Generated on $className {
   /// Registers all MCP handlers that were annotated in the source class.
-  ///
-  /// This method should be called once during server initialization
-  /// to register all tools, resources, and prompts with the MCP server.
-  ///
-   /// Example:
-   /// ```dart
-   /// final server = $className();
-   /// server.registerGeneratedHandlers(); // Register all annotated methods
-   /// await server.start(); // Start the server
-   /// ```
+  /// This method is automatically called during server initialization.
   void registerGeneratedHandlers() {''');
 
     for (int i = 0; i < methods.length; i++) {
@@ -116,13 +107,15 @@ extension ${className}Generated on $className {
         buffer.writeln('');
       }
 
-      // Determine annotation type and generate appropriate registration
+      // Determine annotation type and get annotation details
       final annotationType = _getAnnotationType(method);
+      final annotationName = _getAnnotationName(method);
+      final annotationDescription = _getAnnotationDescription(method);
       final registrationMethod = _getRegistrationMethod(annotationType);
 
       // Add comment for the method
       buffer.writeln(
-        '    // Register handler for @$annotationType(\'$methodName\')',
+        '    // Register handler for @$annotationType(\'$annotationName\')',
       );
       if (methodDoc != null) {
         final cleanDoc = methodDoc
@@ -135,7 +128,7 @@ extension ${className}Generated on $className {
       }
 
       buffer.writeln('    $registrationMethod(');
-      buffer.writeln('      \'$methodName\',');
+      buffer.writeln('      \'$annotationName\',');
       if (annotationType == 'MCPTool') {
         buffer.writeln('      (context) async {');
       } else if (annotationType == 'MCPResource') {
@@ -146,12 +139,6 @@ extension ${className}Generated on $className {
 
       // Generate parameter extraction based on annotation type
       if (annotationType == 'MCPTool') {
-        // For tools, extract from context
-        final hasParams = method.formalParameters.isNotEmpty;
-        if (hasParams) {
-          buffer.writeln('        // Extract parameters from MCP context');
-        }
-
         for (final param in method.formalParameters) {
           final paramName = param.name;
           if (paramName == null) continue;
@@ -175,10 +162,6 @@ extension ${className}Generated on $className {
             buffer.writeln('        $paramExtraction');
           }
         }
-      } else if (annotationType == 'MCPResource') {
-        // For resources, the first parameter should be uri, others extracted from context if needed
-        // But typically resources just take a uri parameter
-        buffer.writeln('        // uri parameter passed directly from handler');
       } else if (annotationType == 'MCPPrompt') {
         // For prompts, check if method already takes Map<String, dynamic> args
         final hasMapParameter =
@@ -187,15 +170,8 @@ extension ${className}Generated on $className {
               'Map<String, dynamic>',
             );
 
-        if (hasMapParameter) {
-          buffer.writeln('        // args parameter passed directly to method');
-        } else {
+        if (!hasMapParameter) {
           // Extract individual parameters from args Map
-          final hasParams = method.formalParameters.isNotEmpty;
-          if (hasParams) {
-            buffer.writeln('        // Extract parameters from args Map');
-          }
-
           for (final param in method.formalParameters) {
             final paramName = param.name;
             if (paramName == null) continue;
@@ -218,11 +194,6 @@ extension ${className}Generated on $className {
       }
 
       // Generate method call based on annotation type
-      buffer.writeln('');
-      buffer.writeln(
-        '        // Call the original method with extracted parameters',
-      );
-
       if (annotationType == 'MCPTool') {
         // For tools, use extracted parameters
         final positionalArgs = method.formalParameters
@@ -283,11 +254,21 @@ extension ${className}Generated on $className {
       }
 
       buffer.writeln('      },');
+
+      // Add description and input schema for tools
       if (annotationType == 'MCPTool') {
-        buffer.writeln(
-          '      description: \'Generated handler for $methodName\',',
-        );
+        final description = annotationDescription.isNotEmpty
+            ? annotationDescription
+            : 'Generated handler for $methodName';
+        buffer.writeln('      description: \'$description\',');
+
+        // Generate input schema from method parameters
+        final inputSchema = _generateInputSchema(method);
+        if (inputSchema != null) {
+          buffer.writeln('      inputSchema: $inputSchema,');
+        }
       }
+
       buffer.writeln('    );');
     }
 
@@ -297,15 +278,15 @@ extension ${className}Generated on $className {
     // Collect available tools, resources, and prompts from the methods
     final availableTools = methods
         .where((m) => _getAnnotationType(m) == 'MCPTool')
-        .map((m) => m.name!)
+        .map((m) => _getAnnotationName(m))
         .toList();
     final availableResources = methods
         .where((m) => _getAnnotationType(m) == 'MCPResource')
-        .map((m) => m.name!)
+        .map((m) => _getAnnotationName(m))
         .toList();
     final availablePrompts = methods
         .where((m) => _getAnnotationType(m) == 'MCPPrompt')
-        .map((m) => m.name!)
+        .map((m) => _getAnnotationName(m))
         .toList();
 
     buffer.writeln(
@@ -318,7 +299,7 @@ extension ${className}Generated on $className {
     buffer.writeln(
       '  /// for this specific MCP server with its available capabilities.',
     );
-    buffer.writeln(' void showUsage({String? serverName}) {');
+    buffer.writeln('  void showUsage({String? serverName}) {');
     buffer.writeln(
       '''    print('Usage: dart \${serverName ?? "server"}.dart [options]');
     print('');
@@ -434,5 +415,199 @@ extension ${className}Generated on $className {
       default:
         return 'registerTool';
     }
+  }
+
+  /// Extract the name from the annotation
+  String _getAnnotationName(MethodElement method) {
+    // Try to get the name from the annotation, fallback to method name
+    if (_mcpToolChecker.hasAnnotationOfExact(method)) {
+      final annotation = _mcpToolChecker.firstAnnotationOfExact(method);
+      if (annotation != null) {
+        final nameValue = annotation.getField('name');
+        if (nameValue != null && nameValue.toStringValue() != null) {
+          return nameValue.toStringValue()!;
+        }
+      }
+    } else if (_mcpResourceChecker.hasAnnotationOfExact(method)) {
+      final annotation = _mcpResourceChecker.firstAnnotationOfExact(method);
+      if (annotation != null) {
+        final nameValue = annotation.getField('name');
+        if (nameValue != null && nameValue.toStringValue() != null) {
+          return nameValue.toStringValue()!;
+        }
+      }
+    } else if (_mcpPromptChecker.hasAnnotationOfExact(method)) {
+      final annotation = _mcpPromptChecker.firstAnnotationOfExact(method);
+      if (annotation != null) {
+        final nameValue = annotation.getField('name');
+        if (nameValue != null && nameValue.toStringValue() != null) {
+          return nameValue.toStringValue()!;
+        }
+      }
+    }
+
+    return method.name!;
+  }
+
+  /// Extract the description from the annotation
+  String _getAnnotationDescription(MethodElement method) {
+    if (_mcpToolChecker.hasAnnotationOfExact(method)) {
+      final annotation = _mcpToolChecker.firstAnnotationOfExact(method);
+      if (annotation != null) {
+        final descValue = annotation.getField('description');
+        if (descValue != null && descValue.toStringValue() != null) {
+          return descValue.toStringValue()!;
+        }
+      }
+    } else if (_mcpResourceChecker.hasAnnotationOfExact(method)) {
+      final annotation = _mcpResourceChecker.firstAnnotationOfExact(method);
+      if (annotation != null) {
+        final descValue = annotation.getField('description');
+        if (descValue != null && descValue.toStringValue() != null) {
+          return descValue.toStringValue()!;
+        }
+      }
+    } else if (_mcpPromptChecker.hasAnnotationOfExact(method)) {
+      final annotation = _mcpPromptChecker.firstAnnotationOfExact(method);
+      if (annotation != null) {
+        final descValue = annotation.getField('description');
+        if (descValue != null && descValue.toStringValue() != null) {
+          return descValue.toStringValue()!;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  /// Generate JSON schema for method parameters
+  String? _generateInputSchema(MethodElement method) {
+    // First check if the annotation already has an inputSchema
+    if (_mcpToolChecker.hasAnnotationOfExact(method)) {
+      final annotation = _mcpToolChecker.firstAnnotationOfExact(method);
+      if (annotation != null) {
+        final inputSchemaValue = annotation.getField('inputSchema');
+        if (inputSchemaValue != null && !inputSchemaValue.isNull) {
+          // If annotation has inputSchema, we should use it, but for now we'll generate from parameters
+          // TODO: Parse the existing inputSchema from the annotation
+        }
+      }
+    }
+
+    final parameters = method.formalParameters;
+    if (parameters.isEmpty) {
+      return null;
+    }
+
+    final properties = <String, Map<String, dynamic>>{};
+    final required = <String>[];
+
+    for (final param in parameters) {
+      final paramName = param.name;
+      if (paramName == null) continue;
+
+      final paramType = _getTypeString(param.type);
+      final jsonType = _dartTypeToJsonType(paramType);
+
+      properties[paramName] = {
+        'type': jsonType,
+        'description': '${_capitalizeFirst(paramName)} parameter',
+      };
+
+      if (!param.isOptional) {
+        required.add(paramName);
+      }
+    }
+
+    final schema = {
+      'type': 'object',
+      'properties': properties,
+      if (required.isNotEmpty) 'required': required,
+    };
+
+    return _mapToString(schema);
+  }
+
+  /// Convert Dart type to JSON Schema type
+  String _dartTypeToJsonType(String dartType) {
+    switch (dartType.toLowerCase()) {
+      case 'string':
+        return 'string';
+      case 'int':
+      case 'integer':
+        return 'integer';
+      case 'double':
+      case 'num':
+      case 'number':
+        return 'number';
+      case 'bool':
+      case 'boolean':
+        return 'boolean';
+      case 'list<dynamic>':
+        return 'array';
+      case 'map<string, dynamic>':
+        return 'object';
+      default:
+        return 'string'; // Default fallback
+    }
+  }
+
+  /// Convert a Map to a string representation for code generation
+  String _mapToString(Map<String, dynamic> map) {
+    final buffer = StringBuffer('{');
+    final entries = map.entries.toList();
+
+    for (int i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      final isLast = i == entries.length - 1;
+
+      buffer.write('\n        \'${entry.key}\': ');
+      buffer.write(_valueToString(entry.value, 2));
+      if (!isLast) buffer.write(',');
+    }
+
+    buffer.write('\n      }');
+    return buffer.toString();
+  }
+
+  /// Convert a value to string representation for code generation
+  String _valueToString(dynamic value, int indentLevel) {
+    final indent = '  ' * indentLevel;
+
+    if (value is String) {
+      return '\'$value\'';
+    } else if (value is Map<String, dynamic>) {
+      final buffer = StringBuffer('{');
+      final entries = value.entries.toList();
+
+      for (int i = 0; i < entries.length; i++) {
+        final entry = entries[i];
+        final isLast = i == entries.length - 1;
+
+        buffer.write('\n$indent  \'${entry.key}\': ');
+        buffer.write(_valueToString(entry.value, indentLevel + 1));
+        if (!isLast) buffer.write(',');
+      }
+
+      buffer.write('\n$indent}');
+      return buffer.toString();
+    } else if (value is List) {
+      final buffer = StringBuffer('[');
+      for (int i = 0; i < value.length; i++) {
+        final isLast = i == value.length - 1;
+        buffer.write(_valueToString(value[i], indentLevel));
+        if (!isLast) buffer.write(', ');
+      }
+      buffer.write(']');
+      return buffer.toString();
+    } else {
+      return value.toString();
+    }
+  }
+
+  /// Capitalize first letter of a string
+  String _capitalizeFirst(String input) {
+    if (input.isEmpty) return input;
+    return input[0].toUpperCase() + input.substring(1);
   }
 }

@@ -426,7 +426,7 @@ void main() {
             method: 'initialize',
             id: 'init_1',
             params: {
-              'protocolVersion': '2024-11-05',
+              'protocolVersion': '2025-06-18',
               'capabilities': {
                 'tools': {'listChanged': true},
                 'resources': {'subscribe': true},
@@ -442,7 +442,7 @@ void main() {
           expect(response.error, isNull);
 
           final result = response.result as Map<String, dynamic>;
-          expect(result['protocolVersion'], equals('2024-11-05'));
+          expect(result['protocolVersion'], equals('2025-06-18'));
           expect(
             result['serverInfo']['name'],
             equals('production-test-server'),
@@ -724,7 +724,7 @@ void main() {
           MCPRequest(
             method: 'initialize',
             id: '1',
-            params: {'protocolVersion': '2024-11-05'},
+            params: {'protocolVersion': '2025-06-18'},
           ),
         );
         expect(initResponse.result, isNotNull);
