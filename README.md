@@ -36,7 +36,7 @@ A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **
 
 ```yaml
 dependencies:
-  mcp_server_dart: ^1.1.0
+  mcp_server_dart: ^1.1.1
   relic: ^0.5.0  # Modern HTTP framework
   logging: ^1.3.0  # For server logging
 
@@ -49,7 +49,7 @@ dev_dependencies:
 ```dart
 import 'package:mcp_server_dart/mcp_server_dart.dart';
 
-part 'my_server.g.dart'; // Generated file
+part 'my_server.mcp.g.dart'; // Generated file
 
 class MyMCPServer extends MCPServer {
   MyMCPServer() : super(name: 'my-server', version: '1.0.0');
@@ -102,7 +102,7 @@ $code
 dart run build_runner build
 ```
 
-This generates `my_server.g.dart` with registration boilerplate.
+This generates `my_server.mcp.g.dart` with registration boilerplate.
 
 ### 4. Run Your Server
 
@@ -649,7 +649,7 @@ my-mcp-tool
 ```dart
 // Keep logic in .dart files for build_runner
 // weather_logic.dart
-part 'weather_logic.g.dart';
+part 'weather_logic.mcp.g.dart';
 class WeatherLogic extends MCPServer { /* ... */ }
 
 // Create wrapper with any name (weather-server, no extension)

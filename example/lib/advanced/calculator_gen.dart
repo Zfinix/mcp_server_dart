@@ -10,7 +10,7 @@ import 'dart:math' as math;
 import 'package:logging/logging.dart';
 import 'package:mcp_server_dart/mcp_server_dart.dart';
 
-part 'calculator_gen.g.dart';
+part 'calculator_gen.mcp.g.dart';
 
 class CalculatorMCP extends MCPServer {
   CalculatorMCP()

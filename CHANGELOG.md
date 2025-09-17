@@ -1,3 +1,13 @@
+## 1.1.1
+
+- 🔧 **Critical Fix**: Resolved build_runner collision between `source_gen:combining_builder` and `mcp_generator`
+- 📝 **File Extension Change**: Generated files now use `.mcp.g.dart` extension to avoid conflicts with other builders
+- 📚 **Documentation Update**: Updated README and examples to reflect new file extension pattern
+
+### Breaking Changes
+- Generated files now use `.mcp.g.dart` extension instead of `.g.dart`
+- Update your `part` directives from `part 'filename.g.dart';` to `part 'filename.mcp.g.dart';`
+
 ## 1.1.0
 
 - 🚀 **Auto-registration**: Automatic handler registration using reflection - no need to manually call `registerGeneratedHandlers()`
