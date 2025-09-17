@@ -49,7 +49,7 @@ dev_dependencies:
 ```dart
 import 'package:mcp_server_dart/mcp_server_dart.dart';
 
-part 'my_server.mcp.g.dart'; // Generated file
+part 'my_server.mcp.dart'; // Generated file
 
 class MyMCPServer extends MCPServer {
   MyMCPServer() : super(name: 'my-server', version: '1.0.0');
@@ -102,7 +102,7 @@ $code
 dart run build_runner build
 ```
 
-This generates `my_server.mcp.g.dart` with registration boilerplate.
+This generates `my_server.mcp.dart` with registration boilerplate.
 
 ### 4. Run Your Server
 
@@ -649,7 +649,7 @@ my-mcp-tool
 ```dart
 // Keep logic in .dart files for build_runner
 // weather_logic.dart
-part 'weather_logic.mcp.g.dart';
+part 'weather_logic.mcp.dart';
 class WeatherLogic extends MCPServer { /* ... */ }
 
 // Create wrapper with any name (weather-server, no extension)

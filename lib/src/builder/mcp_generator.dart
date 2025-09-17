@@ -10,7 +10,7 @@ import 'package:source_gen/source_gen.dart';
 
 /// Builder function for build.yaml
 Builder mcpBuilder(BuilderOptions options) =>
-    LibraryBuilder(MCPGenerator(), generatedExtension: '.mcp.g.dart');
+    LibraryBuilder(MCPGenerator(), generatedExtension: '.mcp.dart');
 
 /// Simple generator that processes all methods in MCP classes
 class MCPGenerator extends Generator {

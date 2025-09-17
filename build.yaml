@@ -2,6 +2,6 @@ builders:
   mcp_generator:
     import: "package:mcp_server_dart/src/builder/mcp_generator.dart"
     builder_factories: ["mcpBuilder"]
-    build_extensions: {".dart": [".mcp.g.dart"]}
+    build_extensions: {".dart": [".mcp.dart"]}
     auto_apply: dependents
     build_to: source

@@ -8,7 +8,7 @@ import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:mcp_server_dart/mcp_server_dart.dart';
 
-part 'google_maps.mcp.g.dart';
+part 'google_maps.mcp.dart';
 
 /// A Google Maps MCP server with various location-based tools
 class GoogleMapsMCP extends MCPServer {

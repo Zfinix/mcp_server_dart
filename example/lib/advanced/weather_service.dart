@@ -11,7 +11,7 @@ import 'dart:math';
 import 'package:logging/logging.dart';
 import 'package:mcp_server_dart/mcp_server_dart.dart';
 
-part 'weather_service.mcp.g.dart';
+part 'weather_service.mcp.dart';
 
 /// Weather conditions enum
 enum WeatherCondition { sunny, cloudy, rainy, snowy, stormy, foggy }
