@@ -216,11 +216,32 @@ extension ${className}Generated on $className {
           buffer.writeln('        return $methodName($args);');
         }
       } else if (annotationType == 'MCPResource') {
-        // For resources, pass uri directly (assuming first parameter is uri)
-        if (method.returnType.toString().contains('Future')) {
-          buffer.writeln('        return await $methodName(uri);');
+        // For resources, check if method expects uri parameter
+        final expectsUri =
+            method.formalParameters.isNotEmpty &&
+            method.formalParameters.any((p) => p.name == 'uri');
+
+        if (expectsUri) {
+          // Method expects uri parameter
+          if (method.returnType.toString().contains('Future')) {
+            buffer.writeln('        return await $methodName(uri);');
+          } else {
+            buffer.writeln('        return $methodName(uri);');
+          }
         } else {
-          buffer.writeln('        return $methodName(uri);');
+          // Method doesn't expect uri parameter, call without it
+          // But we need to return MCPResourceContent, so wrap the result
+          if (method.returnType.toString().contains('Future')) {
+            buffer.writeln('        final result = await $methodName();');
+          } else {
+            buffer.writeln('        final result = $methodName();');
+          }
+          buffer.writeln('        return MCPResourceContent(');
+          buffer.writeln('          uri: uri,');
+          buffer.writeln('          name: \'$annotationName\',');
+          buffer.writeln('          mimeType: \'application/json\',');
+          buffer.writeln('          text: jsonEncode(result),');
+          buffer.writeln('        );');
         }
       } else if (annotationType == 'MCPPrompt') {
         // For prompts, check if method takes Map<String, dynamic> directly

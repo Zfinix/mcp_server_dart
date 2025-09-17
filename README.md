@@ -36,7 +36,7 @@ A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **
 
 ```yaml
 dependencies:
-  mcp_server_dart: ^1.1.1
+  mcp_server_dart: ^1.1.2
   relic: ^0.5.0  # Modern HTTP framework
   logging: ^1.3.0  # For server logging
 

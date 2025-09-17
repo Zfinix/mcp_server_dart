@@ -1,3 +1,25 @@
+## 1.1.2
+
+- 🔧 **Resource Generation Fix**: Fixed critical issue where generator incorrectly passed `uri` parameter to resource methods that don't expect it
+- 🧪 **Enhanced Testing**: Added comprehensive resource test example demonstrating both URI-based and simple data provider resources
+- 📚 **Better Resource Patterns**: Generator now intelligently detects if resource methods expect URI parameters and handles both patterns correctly
+
+### What's Fixed
+- Resource methods without URI parameters now work correctly (e.g., `getServerStats()` instead of `getServerStats(uri)`)
+- Generator automatically wraps simple return values in `MCPResourceContent` for URI-less resources
+- Both traditional URI-based resources and simple data providers are now fully supported
+
+### Example Usage
+```dart
+// Traditional resource with URI parameter
+@MCPResource('userProfile')
+Future<MCPResourceContent> getUserProfile(String uri) async { ... }
+
+// Simple resource without URI parameter (now works!)
+@MCPResource('serverStats') 
+Future<Map<String, dynamic>> getServerStats() async { ... }
+```
+
 ## 1.1.1
 
 - 🔧 **Critical Fix**: Resolved build_runner collision between `source_gen:combining_builder` and `mcp_generator`

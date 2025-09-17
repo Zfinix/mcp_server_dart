@@ -1,6 +1,6 @@
 name: mcp_server_dart
 description: A developer-friendly MCP (Model Context Protocol) framework for Dart with annotations and code generation.
-version: 1.1.1
+version: 1.1.2
 repository: https://github.com/zfinix/mcp_server_dart
 
 environment:
