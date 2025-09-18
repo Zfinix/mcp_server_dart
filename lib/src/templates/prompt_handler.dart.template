@@ -1,6 +1,0 @@
-    // Register handler for @MCPPrompt('{{annotationName}}')
-{{methodDoc}}
-    registerPrompt('{{annotationName}}', (args) {
-{{parameterExtractions}}
-      {{returnStatement}};
-    });
