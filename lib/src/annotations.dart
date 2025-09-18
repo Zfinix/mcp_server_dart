@@ -12,6 +12,7 @@ library;
 ///   // Implementation
 /// }
 /// ```
+@override
 class MCPTool {
   /// The name of the tool as it will appear to the LLM
   final String name;

@@ -18,7 +18,10 @@ class ResourceTestMCP extends MCPServer {
         name: 'resource-test-mcp',
         version: '1.0.0',
         description: 'Test server for different resource patterns',
-      );
+      ) {
+    // Register all generated handlers using the extension
+    registerGeneratedHandlers();
+  }
 
   // Traditional MCP resource that expects URI parameter
   @MCPResource(

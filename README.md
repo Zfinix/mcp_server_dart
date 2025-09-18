@@ -20,7 +20,8 @@ A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **
 ## ✨ Features
 
 - **🏷️ Annotation-based**: Declare MCP tools, resources, and prompts with simple annotations
-- **🔧 Code generation**: Automatic boilerplate generation using `build_runner`
+- **🔧 Code generation**: Automatic boilerplate generation using `build_runner` with extension-based registration
+- **✨ No `@override` required**: Clean method declarations without inheritance boilerplate
 - **📡 Multiple transports**: Support for stdio, HTTP, and Streamable HTTP with Server-Sent Events (SSE)
 - **🔍 Type-safe**: Full Dart type safety with automatic parameter extraction
 - **📚 JSON Schema**: Automatic input schema generation from method signatures
@@ -52,7 +53,10 @@ import 'package:mcp_server_dart/mcp_server_dart.dart';
 part 'my_server.mcp.dart'; // Generated file
 
 class MyMCPServer extends MCPServer {
-  MyMCPServer() : super(name: 'my-server', version: '1.0.0');
+  MyMCPServer() : super(name: 'my-server', version: '1.0.0') {
+    // Register all generated handlers using the extension
+    registerGeneratedHandlers();
+  }
 
   @MCPTool('greet', description: 'Greet someone by name')
   Future<String> greet(String name) async {
@@ -102,7 +106,7 @@ $code
 dart run build_runner build
 ```
 
-This generates `my_server.mcp.dart` with registration boilerplate.
+This generates `my_server.mcp.dart` with an extension that provides automatic registration methods.
 
 ### 4. Run Your Server
 
@@ -117,8 +121,7 @@ void main() async {
     print('${record.level.name}: ${record.time}: ${record.message}');
   });
 
-  final server = MyMCPServer();
-  server.registerGeneratedHandlers(); // Auto-generated method
+  final server = MyMCPServer(); // Handlers auto-registered in constructor
   
   // Choose your transport:
   await server.start();        // For CLI integration (stdio)
@@ -204,7 +207,9 @@ See the [Google Maps MCP example](example/lib/advanced/google_maps.dart) for a c
 
 ```dart
 class GoogleMapsMCP extends MCPServer {
-  GoogleMapsMCP() : super(name: 'google-maps-mcp', version: '1.0.0');
+  GoogleMapsMCP() : super(name: 'google-maps-mcp', version: '1.0.0') {
+    registerGeneratedHandlers();
+  }
 
   @MCPTool('searchPlace', description: 'Find places by name or address')
   Future<Map<String, dynamic>> searchPlace(String query, int limit = 5) async {
@@ -428,8 +433,7 @@ void main() {
     late HttpClient client;
     
     setUpAll(() async {
-      server = MyMCPServer();
-      server.registerGeneratedHandlers();
+      server = MyMCPServer(); // Handlers auto-registered
       await server.serve(port: 8081); // Use different port for testing
       
       client = HttpClient();
@@ -484,7 +488,7 @@ void main() {
     late MyMCPServer server;
     
     setUp(() {
-      server = MyMCPServer();
+      server = MyMCPServer(); // Handlers auto-registered
     });
 
     test('greet method works directly', () async {
@@ -578,7 +582,7 @@ dart compile exe lib/basic/calculator.dart -o calculator-server
 1. **Write your server class** extending `MCPServer`
 2. **Annotate methods** with `@MCPTool`, `@MCPResource`, or `@MCPPrompt`
 3. **Run code generation**: `dart run build_runner build`
-4. **Call `registerGeneratedHandlers()`** in your main function
+4. **Call `registerGeneratedHandlers()`** in your constructor
 5. **Choose transport** (stdio, HTTP, Streamable HTTP) and start server
 
 ### Watch Mode for Development

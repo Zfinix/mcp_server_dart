@@ -1,0 +1,5 @@
+    // Register handler for @MCPResource('{{annotationName}}')
+{{methodDoc}}
+    registerResource('{{annotationName}}', (uri) async {
+      {{returnStatement}};
+    });

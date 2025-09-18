@@ -4,7 +4,6 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:relic/io_adapter.dart' as io_adapter;
@@ -92,33 +91,6 @@ abstract class MCPServer {
       handleRequest: handleRequest,
       sessionManager: _sessionManager,
     );
-
-    // Try to automatically call registerGeneratedHandlers if it exists
-    _autoRegisterIfExists();
-  }
-
-  /// Automatically register generated handlers if the method exists
-  void _autoRegisterIfExists() {
-    try {
-      // Use reflection to check if registerGeneratedHandlers method exists
-      final instanceMirror = reflect(this);
-      final classMirror = instanceMirror.type;
-
-      // Look for the registerGeneratedHandlers method
-      final methodSymbol = Symbol('registerGeneratedHandlers');
-
-      if (classMirror.instanceMembers.containsKey(methodSymbol)) {
-        instanceMirror.invoke(methodSymbol, []);
-        _logger.info('✓ Automatically registered generated MCP handlers');
-      } else {
-        _logger.fine(
-          'No generated handlers to auto-register (this is normal for manual servers)',
-        );
-      }
-    } catch (e) {
-      // Some error occurred - might be method doesn't exist or reflection failed
-      _logger.fine('No generated handlers to auto-register: $e');
-    }
   }
 
   /// Register a tool manually (used by generated code)
@@ -536,4 +508,5 @@ abstract class MCPServer {
       }
     }
   }
+
 }

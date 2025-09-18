@@ -19,7 +19,10 @@ class CalculatorMCP extends MCPServer {
         version: '1.0.0',
         description:
             'A calculator MCP server with basic and advanced operations',
-      );
+      ) {
+    // Register all generated handlers using the extension
+    registerGeneratedHandlers();
+  }
 
   @MCPTool('add', description: 'Add two numbers')
   Future<Map<String, dynamic>> add({required num a, required num b}) async {

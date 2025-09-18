@@ -17,7 +17,10 @@ class GoogleMapsMCP extends MCPServer {
         name: 'google-maps-mcp',
         version: '1.0.0',
         description: 'MCP server providing Google Maps functionality',
-      );
+      ) {
+    // Register all generated handlers using the extension
+    registerGeneratedHandlers();
+  }
 
   /// Search for places by name or address
   @MCPTool('searchPlace', description: 'Find places by name or address')
