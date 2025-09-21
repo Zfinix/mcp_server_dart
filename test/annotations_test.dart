@@ -4,19 +4,19 @@ import 'package:mcp_server_dart/mcp_server_dart.dart';
 void main() {
   group('MCPTool Annotation', () {
     test('should create tool annotation with name only', () {
-      const tool = tool('test_tool');
+      const kTool = tool('test_tool');
 
-      expect(tool.name, equals('test_tool'));
-      expect(tool.description, equals(''));
-      expect(tool.inputSchema, isNull);
+      expect(kTool.name, equals('test_tool'));
+      expect(kTool.description, equals(''));
+      expect(kTool.inputSchema, isNull);
     });
 
     test('should create tool annotation with description', () {
-      const tool = tool('test_tool', description: 'A test tool for testing');
+      const kTool = tool('test_tool', description: 'A test tool for testing');
 
-      expect(tool.name, equals('test_tool'));
-      expect(tool.description, equals('A test tool for testing'));
-      expect(tool.inputSchema, isNull);
+      expect(kTool.name, equals('test_tool'));
+      expect(kTool.description, equals('A test tool for testing'));
+      expect(kTool.inputSchema, isNull);
     });
 
     test('should create tool annotation with input schema', () {
@@ -29,15 +29,15 @@ void main() {
         'required': ['name'],
       };
 
-      const tool = tool(
+      const kTool = tool(
         'user_tool',
         description: 'Manage user data',
         inputSchema: schema,
       );
 
-      expect(tool.name, equals('user_tool'));
-      expect(tool.description, equals('Manage user data'));
-      expect(tool.inputSchema, equals(schema));
+      expect(kTool.name, equals('user_tool'));
+      expect(kTool.description, equals('Manage user data'));
+      expect(kTool.inputSchema, equals(schema));
     });
 
     test('should create tool annotation with all parameters', () {
@@ -49,205 +49,205 @@ void main() {
         'required': ['query'],
       };
 
-      const tool = tool(
+      const kTool = tool(
         'search_tool',
         description: 'Search for information',
         inputSchema: schema,
       );
 
-      expect(tool.name, equals('search_tool'));
-      expect(tool.description, equals('Search for information'));
-      expect(tool.inputSchema, equals(schema));
+      expect(kTool.name, equals('search_tool'));
+      expect(kTool.description, equals('Search for information'));
+      expect(kTool.inputSchema, equals(schema));
     });
   });
 
   group('MCPResource Annotation', () {
     test('should create resource annotation with name only', () {
-      const resource = resource('test_resource');
+      const kResource = resource('test_resource');
 
-      expect(resource.name, equals('test_resource'));
-      expect(resource.description, equals(''));
-      expect(resource.mimeType, isNull);
+      expect(kResource.name, equals('test_resource'));
+      expect(kResource.description, equals(''));
+      expect(kResource.mimeType, isNull);
     });
 
     test('should create resource annotation with description', () {
-      const resource = resource(
+      const kResource = resource(
         'user_data',
         description: 'User profile information',
       );
 
-      expect(resource.name, equals('user_data'));
-      expect(resource.description, equals('User profile information'));
-      expect(resource.mimeType, isNull);
+      expect(kResource.name, equals('user_data'));
+      expect(kResource.description, equals('User profile information'));
+      expect(kResource.mimeType, isNull);
     });
 
     test('should create resource annotation with mime type', () {
-      const resource = resource(
+      const kResource = resource(
         'config_file',
         description: 'Application configuration',
         mimeType: 'application/json',
       );
 
-      expect(resource.name, equals('config_file'));
-      expect(resource.description, equals('Application configuration'));
-      expect(resource.mimeType, equals('application/json'));
+      expect(kResource.name, equals('config_file'));
+      expect(kResource.description, equals('Application configuration'));
+      expect(kResource.mimeType, equals('application/json'));
     });
 
     test('should create resource annotation with all parameters', () {
-      const resource = resource(
+      const kResource = resource(
         'image_data',
         description: 'Profile image data',
         mimeType: 'image/png',
       );
 
-      expect(resource.name, equals('image_data'));
-      expect(resource.description, equals('Profile image data'));
-      expect(resource.mimeType, equals('image/png'));
+      expect(kResource.name, equals('image_data'));
+      expect(kResource.description, equals('Profile image data'));
+      expect(kResource.mimeType, equals('image/png'));
     });
   });
 
   group('MCPPrompt Annotation', () {
     test('should create prompt annotation with name only', () {
-      const prompt = prompt('test_prompt');
+      const kPrompt = prompt('test_prompt');
 
-      expect(prompt.name, equals('test_prompt'));
-      expect(prompt.description, equals(''));
-      expect(prompt.arguments, isNull);
+      expect(kPrompt.name, equals('test_prompt'));
+      expect(kPrompt.description, equals(''));
+      expect(kPrompt.arguments, isNull);
     });
 
     test('should create prompt annotation with description', () {
-      const prompt = prompt(
+      const kPrompt = prompt(
         'code_review',
         description: 'Review code for best practices',
       );
 
-      expect(prompt.name, equals('code_review'));
-      expect(prompt.description, equals('Review code for best practices'));
-      expect(prompt.arguments, isNull);
+      expect(kPrompt.name, equals('code_review'));
+      expect(kPrompt.description, equals('Review code for best practices'));
+      expect(kPrompt.arguments, isNull);
     });
 
     test('should create prompt annotation with arguments', () {
       const arguments = ['code', 'language'];
-      const prompt = prompt(
+      const kPrompt = prompt(
         'code_review',
         description: 'Review code for best practices',
         arguments: arguments,
       );
 
-      expect(prompt.name, equals('code_review'));
-      expect(prompt.description, equals('Review code for best practices'));
-      expect(prompt.arguments, equals(arguments));
+      expect(kPrompt.name, equals('code_review'));
+      expect(kPrompt.description, equals('Review code for best practices'));
+      expect(kPrompt.arguments, equals(arguments));
     });
 
     test('should create prompt annotation with all parameters', () {
       const arguments = ['content', 'style', 'audience'];
-      const prompt = prompt(
+      const kPrompt = prompt(
         'content_generator',
         description: 'Generate content based on parameters',
         arguments: arguments,
       );
 
-      expect(prompt.name, equals('content_generator'));
+      expect(kPrompt.name, equals('content_generator'));
       expect(
-        prompt.description,
+        kPrompt.description,
         equals('Generate content based on parameters'),
       );
-      expect(prompt.arguments, equals(arguments));
+      expect(kPrompt.arguments, equals(arguments));
     });
   });
 
   group('MCPParam Annotation', () {
     test('should create param annotation with defaults', () {
-      const param = param();
+      const kParam = param();
 
-      expect(param.required, isTrue);
-      expect(param.description, equals(''));
-      expect(param.type, isNull);
-      expect(param.example, isNull);
+      expect(kParam.required, isTrue);
+      expect(kParam.description, equals(''));
+      expect(kParam.type, isNull);
+      expect(kParam.example, isNull);
     });
 
     test('should create param annotation with required false', () {
-      const param = param(required: false);
+      const kParam = param(required: false);
 
-      expect(param.required, isFalse);
-      expect(param.description, equals(''));
-      expect(param.type, isNull);
-      expect(param.example, isNull);
+      expect(kParam.required, isFalse);
+      expect(kParam.description, equals(''));
+      expect(kParam.type, isNull);
+      expect(kParam.example, isNull);
     });
 
     test('should create param annotation with description', () {
-      const param = param(description: 'The name of the user');
+      const kParam = param(description: 'The name of the user');
 
-      expect(param.required, isTrue);
-      expect(param.description, equals('The name of the user'));
-      expect(param.type, isNull);
-      expect(param.example, isNull);
+      expect(kParam.required, isTrue);
+      expect(kParam.description, equals('The name of the user'));
+      expect(kParam.type, isNull);
+      expect(kParam.example, isNull);
     });
 
     test('should create param annotation with type', () {
-      const param = param(description: 'User age', type: 'integer');
+      const kParam = param(description: 'User age', type: 'integer');
 
-      expect(param.required, isTrue);
-      expect(param.description, equals('User age'));
-      expect(param.type, equals('integer'));
-      expect(param.example, isNull);
+      expect(kParam.required, isTrue);
+      expect(kParam.description, equals('User age'));
+      expect(kParam.type, equals('integer'));
+      expect(kParam.example, isNull);
     });
 
     test('should create param annotation with example', () {
-      const param = param(
+      const kParam = param(
         description: 'User email address',
         type: 'string',
         example: 'user@example.com',
       );
 
-      expect(param.required, isTrue);
-      expect(param.description, equals('User email address'));
-      expect(param.type, equals('string'));
-      expect(param.example, equals('user@example.com'));
+      expect(kParam.required, isTrue);
+      expect(kParam.description, equals('User email address'));
+      expect(kParam.type, equals('string'));
+      expect(kParam.example, equals('user@example.com'));
     });
 
     test('should create param annotation with all parameters', () {
-      const param = param(
+      const kParam = param(
         required: false,
         description: 'Optional user nickname',
         type: 'string',
         example: 'johnny',
       );
 
-      expect(param.required, isFalse);
-      expect(param.description, equals('Optional user nickname'));
-      expect(param.type, equals('string'));
-      expect(param.example, equals('johnny'));
+      expect(kParam.required, isFalse);
+      expect(kParam.description, equals('Optional user nickname'));
+      expect(kParam.type, equals('string'));
+      expect(kParam.example, equals('johnny'));
     });
 
     test('should create param annotation with complex example', () {
       const complexExample = {'name': 'John Doe', 'age': 30, 'active': true};
 
-      const param = param(
+      const kParam = param(
         description: 'User object',
         type: 'object',
         example: complexExample,
       );
 
-      expect(param.required, isTrue);
-      expect(param.description, equals('User object'));
-      expect(param.type, equals('object'));
-      expect(param.example, equals(complexExample));
+      expect(kParam.required, isTrue);
+      expect(kParam.description, equals('User object'));
+      expect(kParam.type, equals('object'));
+      expect(kParam.example, equals(complexExample));
     });
 
     test('should create param annotation with list example', () {
       const listExample = ['admin', 'user', 'guest'];
 
-      const param = param(
+      const kParam = param(
         description: 'User roles',
         type: 'array',
         example: listExample,
       );
 
-      expect(param.required, isTrue);
-      expect(param.description, equals('User roles'));
-      expect(param.type, equals('array'));
-      expect(param.example, equals(listExample));
+      expect(kParam.required, isTrue);
+      expect(kParam.description, equals('User roles'));
+      expect(kParam.type, equals('array'));
+      expect(kParam.example, equals(listExample));
     });
   });
 

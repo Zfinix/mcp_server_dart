@@ -733,12 +733,13 @@ void main() {
         final toolsResponse = await server.handleRequest(
           MCPRequest(method: 'tools/list', id: '2'),
         );
-        final tools = toolsResponse.result['tools'] as List<dynamic>;
-        expect(tools.length, equals(3));
+        final kTools = toolsResponse.result['tools'] as List<dynamic>;
+        expect(kTools.length, equals(3));
 
         final resourcesResponse = await server.handleRequest(
           MCPRequest(method: 'resources/list', id: '3'),
         );
+
         final resources =
             resourcesResponse.result['resources'] as List<dynamic>;
         expect(resources.length, equals(2));
@@ -746,6 +747,7 @@ void main() {
         final promptsResponse = await server.handleRequest(
           MCPRequest(method: 'prompts/list', id: '4'),
         );
+
         final prompts = promptsResponse.result['prompts'] as List<dynamic>;
         expect(prompts.length, equals(2));
 

@@ -124,13 +124,13 @@ void main() {
         expect(response.error, isNull);
 
         final result = response.result as Map<String, dynamic>;
-        final tools = result['tools'] as List<dynamic>;
-        expect(tools.length, equals(1));
+        final kTools = result['tools'] as List<dynamic>;
+        expect(kTools.length, equals(1));
 
-        final tool = tools.first as Map<String, dynamic>;
-        expect(tool['name'], equals('greet'));
-        expect(tool['description'], equals('Greet someone by name'));
-        expect(tool['inputSchema'], isNotNull);
+        final kTool = kTools.first as Map<String, dynamic>;
+        expect(kTool['name'], equals('greet'));
+        expect(kTool['description'], equals('Greet someone by name'));
+        expect(kTool['inputSchema'], isNotNull);
       });
 
       test('should call tool successfully', () async {
@@ -203,11 +203,11 @@ void main() {
         final resources = result['resources'] as List<dynamic>;
         expect(resources.length, equals(1));
 
-        final resource = resources.first as Map<String, dynamic>;
-        expect(resource['name'], equals('user_data'));
-        expect(resource['uri'], equals('mcp://user_data'));
-        expect(resource['description'], equals('User data resource'));
-        expect(resource['mimeType'], equals('application/json'));
+        final kResource = resources.first as Map<String, dynamic>;
+        expect(kResource['name'], equals('user_data'));
+        expect(kResource['uri'], equals('mcp://user_data'));
+        expect(kResource['description'], equals('User data resource'));
+        expect(kResource['mimeType'], equals('application/json'));
       });
 
       test('should read resource successfully', () async {
@@ -263,11 +263,11 @@ void main() {
         final prompts = result['prompts'] as List<dynamic>;
         expect(prompts.length, equals(1));
 
-        final prompt = prompts.first as Map<String, dynamic>;
-        expect(prompt['name'], equals('code_review'));
-        expect(prompt['description'], equals('Code review prompt template'));
+        final kPrompt = prompts.first as Map<String, dynamic>;
+        expect(kPrompt['name'], equals('code_review'));
+        expect(kPrompt['description'], equals('Code review prompt template'));
 
-        final arguments = prompt['arguments'] as List<dynamic>;
+        final arguments = kPrompt['arguments'] as List<dynamic>;
         expect(arguments.length, equals(2));
         expect(arguments[0]['name'], equals('code'));
         expect(arguments[0]['required'], isTrue);

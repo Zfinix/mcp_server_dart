@@ -213,14 +213,14 @@ void main() {
 
   group('MCPToolDefinition', () {
     test('should create tool definition with required fields', () {
-      final tool = MCPToolDefinition(
+      final kTool = MCPToolDefinition(
         name: 'test_tool',
         description: 'A test tool',
       );
 
-      expect(tool.name, equals('test_tool'));
-      expect(tool.description, equals('A test tool'));
-      expect(tool.inputSchema, isNull);
+      expect(kTool.name, equals('test_tool'));
+      expect(kTool.description, equals('A test tool'));
+      expect(kTool.inputSchema, isNull);
     });
 
     test('should create tool definition with schema', () {
@@ -231,15 +231,15 @@ void main() {
         },
         'required': ['param'],
       };
-      final tool = MCPToolDefinition(
+      final kTool = MCPToolDefinition(
         name: 'test_tool',
         description: 'A test tool',
         inputSchema: schema,
       );
 
-      expect(tool.name, equals('test_tool'));
-      expect(tool.description, equals('A test tool'));
-      expect(tool.inputSchema, equals(schema));
+      expect(kTool.name, equals('test_tool'));
+      expect(kTool.description, equals('A test tool'));
+      expect(kTool.inputSchema, equals(schema));
     });
 
     test('should serialize to JSON correctly', () {
@@ -273,39 +273,39 @@ void main() {
         },
       };
 
-      final tool = MCPToolDefinition.fromJson(json);
-      expect(tool.name, equals('test_tool'));
-      expect(tool.description, equals('A test tool'));
-      expect(tool.inputSchema, equals(json['inputSchema']));
+      final kTool = MCPToolDefinition.fromJson(json);
+      expect(kTool.name, equals('test_tool'));
+      expect(kTool.description, equals('A test tool'));
+      expect(kTool.inputSchema, equals(json['inputSchema']));
     });
   });
 
   group('MCPResourceDefinition', () {
     test('should create resource definition with required fields', () {
-      final resource = MCPResourceDefinition(
+      final kResource = MCPResourceDefinition(
         uri: 'mcp://test_resource',
         name: 'test_resource',
         description: 'A test resource',
       );
 
-      expect(resource.uri, equals('mcp://test_resource'));
-      expect(resource.name, equals('test_resource'));
-      expect(resource.description, equals('A test resource'));
-      expect(resource.mimeType, isNull);
+      expect(kResource.uri, equals('mcp://test_resource'));
+      expect(kResource.name, equals('test_resource'));
+      expect(kResource.description, equals('A test resource'));
+      expect(kResource.mimeType, isNull);
     });
 
     test('should create resource definition with mime type', () {
-      final resource = MCPResourceDefinition(
+      final kResource = MCPResourceDefinition(
         uri: 'mcp://test_resource',
         name: 'test_resource',
         description: 'A test resource',
         mimeType: 'application/json',
       );
 
-      expect(resource.uri, equals('mcp://test_resource'));
-      expect(resource.name, equals('test_resource'));
-      expect(resource.description, equals('A test resource'));
-      expect(resource.mimeType, equals('application/json'));
+      expect(kResource.uri, equals('mcp://test_resource'));
+      expect(kResource.name, equals('test_resource'));
+      expect(kResource.description, equals('A test resource'));
+      expect(kResource.mimeType, equals('application/json'));
     });
 
     test('should serialize to JSON correctly', () {
@@ -331,11 +331,11 @@ void main() {
         'mimeType': 'application/json',
       };
 
-      final resource = MCPResourceDefinition.fromJson(json);
-      expect(resource.uri, equals('mcp://test_resource'));
-      expect(resource.name, equals('test_resource'));
-      expect(resource.description, equals('A test resource'));
-      expect(resource.mimeType, equals('application/json'));
+      final kResource = MCPResourceDefinition.fromJson(json);
+      expect(kResource.uri, equals('mcp://test_resource'));
+      expect(kResource.name, equals('test_resource'));
+      expect(kResource.description, equals('A test resource'));
+      expect(kResource.mimeType, equals('application/json'));
     });
   });
 
@@ -540,14 +540,14 @@ void main() {
 
   group('MCPPromptDefinition', () {
     test('should create prompt definition without arguments', () {
-      final prompt = MCPPromptDefinition(
+      final kPrompt = MCPPromptDefinition(
         name: 'test_prompt',
         description: 'A test prompt',
       );
 
-      expect(prompt.name, equals('test_prompt'));
-      expect(prompt.description, equals('A test prompt'));
-      expect(prompt.arguments, isNull);
+      expect(kPrompt.name, equals('test_prompt'));
+      expect(kPrompt.description, equals('A test prompt'));
+      expect(kPrompt.arguments, isNull);
     });
 
     test('should create prompt definition with arguments', () {
@@ -562,15 +562,15 @@ void main() {
           description: 'Programming language',
         ),
       ];
-      final prompt = MCPPromptDefinition(
+      final kPrompt = MCPPromptDefinition(
         name: 'code_review',
         description: 'Review code for best practices',
         arguments: arguments,
       );
 
-      expect(prompt.name, equals('code_review'));
-      expect(prompt.description, equals('Review code for best practices'));
-      expect(prompt.arguments, equals(arguments));
+      expect(kPrompt.name, equals('code_review'));
+      expect(kPrompt.description, equals('Review code for best practices'));
+      expect(kPrompt.arguments, equals(arguments));
     });
 
     test('should serialize to JSON correctly', () {
@@ -612,15 +612,15 @@ void main() {
         ],
       };
 
-      final prompt = MCPPromptDefinition.fromJson(json);
-      expect(prompt.name, equals('code_review'));
-      expect(prompt.description, equals('Review code for best practices'));
-      expect(prompt.arguments, isNotNull);
-      expect(prompt.arguments!.length, equals(2));
-      expect(prompt.arguments![0].name, equals('code'));
-      expect(prompt.arguments![0].required, isTrue);
-      expect(prompt.arguments![1].name, equals('language'));
-      expect(prompt.arguments![1].required, isFalse);
+      final kPrompt = MCPPromptDefinition.fromJson(json);
+      expect(kPrompt.name, equals('code_review'));
+      expect(kPrompt.description, equals('Review code for best practices'));
+      expect(kPrompt.arguments, isNotNull);
+      expect(kPrompt.arguments!.length, equals(2));
+      expect(kPrompt.arguments![0].name, equals('code'));
+      expect(kPrompt.arguments![0].required, isTrue);
+      expect(kPrompt.arguments![1].name, equals('language'));
+      expect(kPrompt.arguments![1].required, isFalse);
     });
   });
 }
