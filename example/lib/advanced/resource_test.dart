@@ -24,7 +24,7 @@ class ResourceTestMCP extends MCPServer {
   }
 
   // Traditional MCP resource that expects URI parameter
-  @MCPResource(
+  @resource(
     'userProfile',
     description: 'Get user profile data by URI',
     mimeType: 'application/json',
@@ -50,7 +50,7 @@ class ResourceTestMCP extends MCPServer {
   }
 
   // Simple resource that doesn't need URI parameter
-  @MCPResource(
+  @resource(
     'serverStats',
     description: 'Current server statistics and metrics',
     mimeType: 'application/json',
@@ -68,7 +68,7 @@ class ResourceTestMCP extends MCPServer {
   }
 
   // Another simple resource without URI
-  @MCPResource(
+  @resource(
     'systemInfo',
     description: 'System information and environment details',
     mimeType: 'application/json',
@@ -89,7 +89,7 @@ class ResourceTestMCP extends MCPServer {
   }
 
   // File-based resource that uses URI to determine content
-  @MCPResource(
+  @resource(
     'configFile',
     description: 'Configuration file content by path',
     mimeType: 'text/plain',
@@ -146,7 +146,7 @@ server.debug=true
   }
 
   // Simple tool for testing
-  @MCPTool('ping', description: 'Simple ping test')
+  @tool('ping', description: 'Simple ping test')
   Future<Map<String, dynamic>> ping() async {
     return {
       'message': 'pong',

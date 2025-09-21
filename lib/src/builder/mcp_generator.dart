@@ -19,10 +19,10 @@ class MCPGenerator extends Generator {
   static final _logger = Logger('MCPGenerator');
 
   // Type checkers for MCP annotations
-  static const _mcpToolChecker = TypeChecker.typeNamed(MCPTool);
-  static const _mcpResourceChecker = TypeChecker.typeNamed(MCPResource);
-  static const _mcpPromptChecker = TypeChecker.typeNamed(MCPPrompt);
-  static const _mcpParamChecker = TypeChecker.typeNamed(MCPParam);
+  static const _mcpToolChecker = TypeChecker.typeNamed(tool);
+  static const _mcpResourceChecker = TypeChecker.typeNamed(resource);
+  static const _mcpPromptChecker = TypeChecker.typeNamed(prompt);
+  static const _mcpParamChecker = TypeChecker.typeNamed(param);
 
   @override
   FutureOr<String?> generate(LibraryReader library, BuildStep buildStep) {

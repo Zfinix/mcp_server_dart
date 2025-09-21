@@ -28,20 +28,16 @@ class WeatherServiceMCP extends MCPServer {
     registerGeneratedHandlers();
   }
 
-  @MCPTool(
+  @tool(
     'get_current_weather',
     description: 'Get current weather for a location',
   )
   Future<Map<String, dynamic>> getCurrentWeather(
-    @MCPParam(description: 'City name or coordinates', example: 'San Francisco')
+    @param(description: 'City name or coordinates', example: 'San Francisco')
     String location, {
-    @MCPParam(
-      required: false,
-      description: 'Temperature unit',
-      example: 'celsius',
-    )
+    @param(required: false, description: 'Temperature unit', example: 'celsius')
     String unit = 'celsius',
-    @MCPParam(required: false, description: 'Include extended forecast')
+    @param(required: false, description: 'Include extended forecast')
     bool includeExtended = false,
   }) async {
     // Simulate API call delay
@@ -92,13 +88,10 @@ class WeatherServiceMCP extends MCPServer {
     return result;
   }
 
-  @MCPTool(
-    'get_weather_alerts',
-    description: 'Get weather alerts for a location',
-  )
+  @tool('get_weather_alerts', description: 'Get weather alerts for a location')
   Future<List<Map<String, dynamic>>> getWeatherAlerts(
-    @MCPParam(description: 'Location to check for alerts') String location, {
-    @MCPParam(required: false, description: 'Alert severity filter')
+    @param(description: 'Location to check for alerts') String location, {
+    @param(required: false, description: 'Alert severity filter')
     String? severity,
   }) async {
     await Future.delayed(Duration(milliseconds: 100));
@@ -128,10 +121,10 @@ class WeatherServiceMCP extends MCPServer {
     return alerts;
   }
 
-  @MCPTool('search_locations', description: 'Search for weather locations')
+  @tool('search_locations', description: 'Search for weather locations')
   Future<List<Map<String, dynamic>>> searchLocations(
-    @MCPParam(description: 'Search query for locations') String query, {
-    @MCPParam(required: false, description: 'Maximum number of results')
+    @param(description: 'Search query for locations') String query, {
+    @param(required: false, description: 'Maximum number of results')
     int limit = 10,
   }) async {
     await Future.delayed(Duration(milliseconds: 150));
@@ -167,7 +160,7 @@ class WeatherServiceMCP extends MCPServer {
     return mockLocations.take(limit).toList();
   }
 
-  @MCPResource(
+  @resource(
     'weather_stations',
     description: 'Available weather monitoring stations',
     mimeType: 'application/json',
@@ -226,7 +219,7 @@ class WeatherServiceMCP extends MCPServer {
     );
   }
 
-  @MCPPrompt(
+  @prompt(
     'weather_report',
     description: 'Generate weather report templates',
     arguments: ['location', 'format', 'audience'],

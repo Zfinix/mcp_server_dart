@@ -23,7 +23,7 @@ class GoogleMapsMCP extends MCPServer {
   }
 
   /// Search for places by name or address
-  @MCPTool('searchPlace', description: 'Find places by name or address')
+  @tool('searchPlace', description: 'Find places by name or address')
   Future<Map<String, dynamic>> searchPlace(
     String query, {
     int limit = 5,
@@ -59,7 +59,7 @@ class GoogleMapsMCP extends MCPServer {
   }
 
   /// Get directions between two locations
-  @MCPTool('getDirections', description: 'Get directions between two points')
+  @tool('getDirections', description: 'Get directions between two points')
   Future<Map<String, dynamic>> getDirections(
     String origin,
     String destination, {
@@ -105,7 +105,7 @@ class GoogleMapsMCP extends MCPServer {
   }
 
   /// Get current location information
-  @MCPResource('currentLocation', description: 'Current user location data')
+  @resource('currentLocation', description: 'Current user location data')
   Future<MCPResourceContent> getCurrentLocation(String uri) async {
     // Mock current location
     final data = {
@@ -133,7 +133,7 @@ class GoogleMapsMCP extends MCPServer {
   }
 
   /// Get nearby points of interest
-  @MCPTool('nearbySearch', description: 'Find nearby places of interest')
+  @tool('nearbySearch', description: 'Find nearby places of interest')
   Future<Map<String, dynamic>> nearbySearch(
     double lat,
     double lng, {
@@ -183,7 +183,7 @@ class GoogleMapsMCP extends MCPServer {
   }
 
   /// Generate a location summary prompt
-  @MCPPrompt('locationSummary', description: 'Generate a summary of a location')
+  @prompt('locationSummary', description: 'Generate a summary of a location')
   String locationSummaryPrompt(
     String location, {
     String summaryType = 'general',
@@ -216,7 +216,7 @@ class GoogleMapsMCP extends MCPServer {
   }
 
   /// Get traffic information for a route
-  @MCPTool('getTrafficInfo', description: 'Get current traffic information')
+  @tool('getTrafficInfo', description: 'Get current traffic information')
   Future<Map<String, dynamic>> getTrafficInfo(
     String origin,
     String destination,

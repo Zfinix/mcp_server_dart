@@ -4,7 +4,7 @@ import 'package:mcp_server_dart/mcp_server_dart.dart';
 void main() {
   group('MCPTool Annotation', () {
     test('should create tool annotation with name only', () {
-      const tool = MCPTool('test_tool');
+      const tool = tool('test_tool');
 
       expect(tool.name, equals('test_tool'));
       expect(tool.description, equals(''));
@@ -12,7 +12,7 @@ void main() {
     });
 
     test('should create tool annotation with description', () {
-      const tool = MCPTool('test_tool', description: 'A test tool for testing');
+      const tool = tool('test_tool', description: 'A test tool for testing');
 
       expect(tool.name, equals('test_tool'));
       expect(tool.description, equals('A test tool for testing'));
@@ -29,7 +29,7 @@ void main() {
         'required': ['name'],
       };
 
-      const tool = MCPTool(
+      const tool = tool(
         'user_tool',
         description: 'Manage user data',
         inputSchema: schema,
@@ -49,7 +49,7 @@ void main() {
         'required': ['query'],
       };
 
-      const tool = MCPTool(
+      const tool = tool(
         'search_tool',
         description: 'Search for information',
         inputSchema: schema,
@@ -63,7 +63,7 @@ void main() {
 
   group('MCPResource Annotation', () {
     test('should create resource annotation with name only', () {
-      const resource = MCPResource('test_resource');
+      const resource = resource('test_resource');
 
       expect(resource.name, equals('test_resource'));
       expect(resource.description, equals(''));
@@ -71,7 +71,7 @@ void main() {
     });
 
     test('should create resource annotation with description', () {
-      const resource = MCPResource(
+      const resource = resource(
         'user_data',
         description: 'User profile information',
       );
@@ -82,7 +82,7 @@ void main() {
     });
 
     test('should create resource annotation with mime type', () {
-      const resource = MCPResource(
+      const resource = resource(
         'config_file',
         description: 'Application configuration',
         mimeType: 'application/json',
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('should create resource annotation with all parameters', () {
-      const resource = MCPResource(
+      const resource = resource(
         'image_data',
         description: 'Profile image data',
         mimeType: 'image/png',
@@ -108,7 +108,7 @@ void main() {
 
   group('MCPPrompt Annotation', () {
     test('should create prompt annotation with name only', () {
-      const prompt = MCPPrompt('test_prompt');
+      const prompt = prompt('test_prompt');
 
       expect(prompt.name, equals('test_prompt'));
       expect(prompt.description, equals(''));
@@ -116,7 +116,7 @@ void main() {
     });
 
     test('should create prompt annotation with description', () {
-      const prompt = MCPPrompt(
+      const prompt = prompt(
         'code_review',
         description: 'Review code for best practices',
       );
@@ -128,7 +128,7 @@ void main() {
 
     test('should create prompt annotation with arguments', () {
       const arguments = ['code', 'language'];
-      const prompt = MCPPrompt(
+      const prompt = prompt(
         'code_review',
         description: 'Review code for best practices',
         arguments: arguments,
@@ -141,7 +141,7 @@ void main() {
 
     test('should create prompt annotation with all parameters', () {
       const arguments = ['content', 'style', 'audience'];
-      const prompt = MCPPrompt(
+      const prompt = prompt(
         'content_generator',
         description: 'Generate content based on parameters',
         arguments: arguments,
@@ -158,7 +158,7 @@ void main() {
 
   group('MCPParam Annotation', () {
     test('should create param annotation with defaults', () {
-      const param = MCPParam();
+      const param = param();
 
       expect(param.required, isTrue);
       expect(param.description, equals(''));
@@ -167,7 +167,7 @@ void main() {
     });
 
     test('should create param annotation with required false', () {
-      const param = MCPParam(required: false);
+      const param = param(required: false);
 
       expect(param.required, isFalse);
       expect(param.description, equals(''));
@@ -176,7 +176,7 @@ void main() {
     });
 
     test('should create param annotation with description', () {
-      const param = MCPParam(description: 'The name of the user');
+      const param = param(description: 'The name of the user');
 
       expect(param.required, isTrue);
       expect(param.description, equals('The name of the user'));
@@ -185,7 +185,7 @@ void main() {
     });
 
     test('should create param annotation with type', () {
-      const param = MCPParam(description: 'User age', type: 'integer');
+      const param = param(description: 'User age', type: 'integer');
 
       expect(param.required, isTrue);
       expect(param.description, equals('User age'));
@@ -194,7 +194,7 @@ void main() {
     });
 
     test('should create param annotation with example', () {
-      const param = MCPParam(
+      const param = param(
         description: 'User email address',
         type: 'string',
         example: 'user@example.com',
@@ -207,7 +207,7 @@ void main() {
     });
 
     test('should create param annotation with all parameters', () {
-      const param = MCPParam(
+      const param = param(
         required: false,
         description: 'Optional user nickname',
         type: 'string',
@@ -223,7 +223,7 @@ void main() {
     test('should create param annotation with complex example', () {
       const complexExample = {'name': 'John Doe', 'age': 30, 'active': true};
 
-      const param = MCPParam(
+      const param = param(
         description: 'User object',
         type: 'object',
         example: complexExample,
@@ -238,7 +238,7 @@ void main() {
     test('should create param annotation with list example', () {
       const listExample = ['admin', 'user', 'guest'];
 
-      const param = MCPParam(
+      const param = param(
         description: 'User roles',
         type: 'array',
         example: listExample,
@@ -254,7 +254,7 @@ void main() {
   group('Annotation Integration', () {
     test('should work together in a realistic scenario', () {
       // Simulate how annotations would be used together
-      const toolAnnotation = MCPTool(
+      const toolAnnotation = tool(
         'user_management',
         description: 'Manage user accounts',
         inputSchema: {
@@ -278,19 +278,19 @@ void main() {
         },
       );
 
-      const resourceAnnotation = MCPResource(
+      const resourceAnnotation = resource(
         'user_database',
         description: 'User database connection',
         mimeType: 'application/json',
       );
 
-      const promptAnnotation = MCPPrompt(
+      const promptAnnotation = prompt(
         'user_welcome',
         description: 'Generate welcome message for new users',
         arguments: ['name', 'role'],
       );
 
-      const paramAnnotation = MCPParam(
+      const paramAnnotation = param(
         required: true,
         description: 'User email address',
         type: 'string',
@@ -318,10 +318,10 @@ void main() {
 
     test('should handle edge cases gracefully', () {
       // Test with minimal configurations
-      const minimalTool = MCPTool('minimal');
-      const minimalResource = MCPResource('minimal');
-      const minimalPrompt = MCPPrompt('minimal');
-      const minimalParam = MCPParam();
+      const minimalTool = tool('minimal');
+      const minimalResource = resource('minimal');
+      const minimalPrompt = prompt('minimal');
+      const minimalParam = param();
 
       expect(minimalTool.name, equals('minimal'));
       expect(minimalTool.description, isEmpty);

@@ -13,7 +13,7 @@ class ProductionMCPServer extends MCPServer {
       );
 
   /// Weather tool with proper annotations (simulated)
-  @MCPTool(
+  @tool(
     'get_weather',
     description: 'Get current weather for a location',
     inputSchema: {
@@ -33,8 +33,8 @@ class ProductionMCPServer extends MCPServer {
     },
   )
   Future<Map<String, dynamic>> getWeather(
-    @MCPParam(description: 'Location to get weather for') String location, {
-    @MCPParam(
+    @param(description: 'Location to get weather for') String location, {
+    @param(
       required: false,
       description: 'Temperature units',
       example: 'celsius',
@@ -59,7 +59,7 @@ class ProductionMCPServer extends MCPServer {
   }
 
   /// File operations tool
-  @MCPTool(
+  @tool(
     'file_operations',
     description: 'Perform file operations like read, write, list',
     inputSchema: {
@@ -113,7 +113,7 @@ class ProductionMCPServer extends MCPServer {
   }
 
   /// Database query tool
-  @MCPTool('database_query', description: 'Execute database queries')
+  @tool('database_query', description: 'Execute database queries')
   Future<List<Map<String, dynamic>>> databaseQuery(
     String query, {
     Map<String, dynamic>? parameters,
@@ -139,7 +139,7 @@ class ProductionMCPServer extends MCPServer {
   }
 
   /// Configuration resource
-  @MCPResource(
+  @resource(
     'app_config',
     description: 'Application configuration settings',
     mimeType: 'application/json',
@@ -171,7 +171,7 @@ class ProductionMCPServer extends MCPServer {
   }
 
   /// System metrics resource
-  @MCPResource(
+  @resource(
     'system_metrics',
     description: 'Current system performance metrics',
     mimeType: 'application/json',
@@ -210,7 +210,7 @@ class ProductionMCPServer extends MCPServer {
   }
 
   /// Code generation prompt
-  @MCPPrompt(
+  @prompt(
     'generate_code',
     description: 'Generate code based on specifications',
     arguments: ['language', 'description', 'style'],
@@ -241,7 +241,7 @@ Please provide:
   }
 
   /// API documentation prompt
-  @MCPPrompt(
+  @prompt(
     'api_documentation',
     description: 'Generate API documentation',
     arguments: ['endpoint', 'method', 'parameters', 'responses'],

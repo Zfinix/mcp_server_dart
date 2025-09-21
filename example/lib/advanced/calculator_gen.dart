@@ -24,7 +24,7 @@ class CalculatorMCP extends MCPServer {
     registerGeneratedHandlers();
   }
 
-  @MCPTool('add', description: 'Add two numbers')
+  @tool('add', description: 'Add two numbers')
   Future<Map<String, dynamic>> add({required num a, required num b}) async {
     return {
       'operation': 'addition',
@@ -33,7 +33,7 @@ class CalculatorMCP extends MCPServer {
     };
   }
 
-  @MCPTool('subtract', description: 'Subtract two numbers')
+  @tool('subtract', description: 'Subtract two numbers')
   Future<Map<String, dynamic>> subtract({
     required num a,
     required num b,
@@ -45,7 +45,7 @@ class CalculatorMCP extends MCPServer {
     };
   }
 
-  @MCPTool('multiply', description: 'Multiply two numbers')
+  @tool('multiply', description: 'Multiply two numbers')
   Future<Map<String, dynamic>> multiply({
     required num a,
     required num b,
@@ -57,7 +57,7 @@ class CalculatorMCP extends MCPServer {
     };
   }
 
-  @MCPTool('divide', description: 'Divide two numbers')
+  @tool('divide', description: 'Divide two numbers')
   Future<Map<String, dynamic>> divide({required num a, required num b}) async {
     if (b == 0) {
       throw ArgumentError('Division by zero is not allowed');
@@ -69,7 +69,7 @@ class CalculatorMCP extends MCPServer {
     };
   }
 
-  @MCPTool('power', description: 'Raise a number to a power')
+  @tool('power', description: 'Raise a number to a power')
   Future<Map<String, dynamic>> power({
     required num base,
     required num exponent,
@@ -82,7 +82,7 @@ class CalculatorMCP extends MCPServer {
     };
   }
 
-  @MCPTool('sqrt', description: 'Calculate square root of a number')
+  @tool('sqrt', description: 'Calculate square root of a number')
   Future<Map<String, dynamic>> sqrt({required num number}) async {
     if (number < 0) {
       throw ArgumentError('Cannot calculate square root of negative number');
@@ -95,7 +95,7 @@ class CalculatorMCP extends MCPServer {
     };
   }
 
-  @MCPTool('factorial', description: 'Calculate factorial of a number')
+  @tool('factorial', description: 'Calculate factorial of a number')
   Future<Map<String, dynamic>> factorial({required int number}) async {
     if (number < 0) {
       throw ArgumentError('Factorial is not defined for negative numbers');
@@ -115,7 +115,7 @@ class CalculatorMCP extends MCPServer {
     return {'operation': 'factorial', 'operand': number, 'result': result};
   }
 
-  @MCPResource(
+  @resource(
     'calculator_stats',
     description: 'Calculator server statistics and capabilities',
     mimeType: 'application/json',

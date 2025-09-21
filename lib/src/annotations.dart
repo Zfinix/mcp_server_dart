@@ -1,4 +1,6 @@
 /// Annotation classes for declarative MCP server development
+// ignore_for_file: camel_case_types
+
 library;
 
 /// Annotation to mark a method as an MCP tool.
@@ -13,7 +15,7 @@ library;
 /// }
 /// ```
 @override
-class MCPTool {
+class tool {
   /// The name of the tool as it will appear to the LLM
   final String name;
 
@@ -23,7 +25,7 @@ class MCPTool {
   /// Optional schema for input parameters (JSON Schema format)
   final Map<String, dynamic>? inputSchema;
 
-  const MCPTool(this.name, {this.description = '', this.inputSchema});
+  const tool(this.name, {this.description = '', this.inputSchema});
 }
 
 /// Annotation to mark a method as an MCP resource.
@@ -42,7 +44,7 @@ class MCPTool {
 ///   );
 /// }
 /// ```
-class MCPResource {
+class resource {
   /// The name of the resource as it will appear to the LLM
   final String name;
 
@@ -52,7 +54,7 @@ class MCPResource {
   /// The MIME type of the resource content
   final String? mimeType;
 
-  const MCPResource(this.name, {this.description = '', this.mimeType});
+  const resource(this.name, {this.description = '', this.mimeType});
 }
 
 /// Annotation to mark a method as an MCP prompt.
@@ -66,7 +68,7 @@ class MCPResource {
 ///   return 'Please review this $language code: $code';
 /// }
 /// ```
-class MCPPrompt {
+class prompt {
   /// The name of the prompt as it will appear to the LLM
   final String name;
 
@@ -76,11 +78,11 @@ class MCPPrompt {
   /// Optional arguments that this prompt accepts
   final List<String>? arguments;
 
-  const MCPPrompt(this.name, {this.description = '', this.arguments});
+  const prompt(this.name, {this.description = '', this.arguments});
 }
 
 /// Annotation to mark a parameter as required or provide additional metadata
-class MCPParam {
+class param {
   /// Whether this parameter is required
   final bool required;
 
@@ -93,7 +95,7 @@ class MCPParam {
   /// Example value for this parameter
   final dynamic example;
 
-  const MCPParam({
+  const param({
     this.required = true,
     this.description = '',
     this.type,
