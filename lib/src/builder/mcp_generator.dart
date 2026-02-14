@@ -56,55 +56,83 @@ class MCPGenerator extends Generator {
     final sourceFile = buildStep.inputId.path.split('/').last;
     final buffer = StringBuffer();
 
-    // Check if this library has any MCP annotations at all
     bool hasAnyMCPAnnotations = false;
 
-    // Collect annotated top-level functions
-    final annotatedTopLevelFunctions = <TopLevelFunctionElement>[];
+    // Find MCPServer subclass (if any) in this library
+    String? mcpServerClassName;
+    List<MethodElement> mcpServerMethods = [];
+
+    // Collect annotated top-level functions defined in THIS library
+    final localTopLevelFunctions = <TopLevelFunctionElement>[];
 
     // Process all elements in the library
     for (final element in library.allElements) {
       if (element is ClassElement) {
         final className = element.name;
+        if (className == null) continue;
 
-        if (className != null) {
-          // Find methods that have MCP annotations
-          final annotatedMethods = element.methods
-              .where(
-                (m) =>
-                    m.name != null &&
-                    !m.isPrivate &&
-                    !m.name!.startsWith('_') &&
-                    m.name != 'registerGeneratedHandlers' &&
-                    _hasAnyMCPAnnotation(m),
-              )
-              .toList();
+        final isMCPServer = _isMCPServerSubclass(element);
 
-          // Only generate code if there are annotated methods
-          if (annotatedMethods.isNotEmpty) {
-            hasAnyMCPAnnotations = true;
-            buffer.writeln(
-              _generateExtension(className, annotatedMethods, sourceFile),
-            );
-          }
+        // Find methods that have MCP annotations
+        final annotatedMethods = element.methods
+            .where(
+              (m) =>
+                  m.name != null &&
+                  !m.isPrivate &&
+                  !m.name!.startsWith('_') &&
+                  m.name != 'registerGeneratedHandlers' &&
+                  _hasAnyMCPAnnotation(m),
+            )
+            .toList();
+
+        if (isMCPServer) {
+          mcpServerClassName = className;
+          mcpServerMethods = annotatedMethods;
+        } else if (annotatedMethods.isNotEmpty) {
+          // Non-MCPServer class with annotated methods — generate its own
+          // extension as before.
+          hasAnyMCPAnnotations = true;
+          buffer.writeln(
+            _generateExtension(className, annotatedMethods, sourceFile),
+          );
         }
       } else if (element is TopLevelFunctionElement) {
-        // Top-level functions with MCP annotations
         if (element.name != null &&
             !element.isPrivate &&
             !element.name!.startsWith('_') &&
             _hasAnyMCPAnnotation(element)) {
-          annotatedTopLevelFunctions.add(element);
+          localTopLevelFunctions.add(element);
         }
       }
     }
 
-    // Generate registration function for annotated top-level functions
-    if (annotatedTopLevelFunctions.isNotEmpty) {
-      hasAnyMCPAnnotations = true;
-      buffer.writeln(
-        _generateTopLevelRegistration(annotatedTopLevelFunctions, sourceFile),
+    if (mcpServerClassName != null) {
+      // MCPServer subclass found — scan imported libraries for annotated
+      // top-level functions and merge everything into one extension.
+      final importedFunctions = _collectImportedAnnotatedFunctions(
+        library.element,
       );
+      final allTopLevelFunctions = [
+        ...localTopLevelFunctions,
+        ...importedFunctions,
+      ];
+
+      if (mcpServerMethods.isNotEmpty || allTopLevelFunctions.isNotEmpty) {
+        hasAnyMCPAnnotations = true;
+        buffer.writeln(
+          _generateExtension(
+            mcpServerClassName,
+            mcpServerMethods,
+            sourceFile,
+            topLevelFunctions: allTopLevelFunctions,
+          ),
+        );
+      }
+    } else if (localTopLevelFunctions.isNotEmpty) {
+      // Standalone file with annotated functions but NO MCPServer class.
+      // Don't generate anything — the server's generator will pick these
+      // up when it scans its imports.
+      return null;
     }
 
     // Only return generated code if we actually found MCP annotations
@@ -130,40 +158,47 @@ class MCPGenerator extends Generator {
     }
   }
 
-  /// Derive a registration function name from the source file name.
-  ///
-  /// e.g. 'connection_tools.dart' -> 'registerConnectionToolsHandlers'
-  String _registrationFunctionName(String sourceFile) {
-    final baseName = sourceFile.replaceAll('.dart', '');
-    final parts = baseName.split('_');
-    final camelCase = parts
-        .map((p) => p.isEmpty ? '' : '${p[0].toUpperCase()}${p.substring(1)}')
-        .join('');
-    return 'register${camelCase}Handlers';
-  }
-
   String _generateExtension(
     String className,
     List<MethodElement> methods,
-    String sourceFile,
-  ) {
-    // Generate handler registrations
-    final handlerRegistrations = methods
-        .map((method) {
-          return _generateHandlerRegistration(method);
-        })
-        .join('\n\n');
+    String sourceFile, {
+    List<TopLevelFunctionElement>? topLevelFunctions,
+  }) {
+    // Generate handler registrations for class methods (no prefix, no
+    // mcpServerExpression — the method is called on `this` implicitly)
+    final registrationParts = <String>[];
+    for (final method in methods) {
+      registrationParts.add(_generateHandlerRegistration(method));
+    }
+
+    // Generate handler registrations for top-level functions (local or
+    // imported).  Inside the extension, `this` IS the MCPServer so we
+    // pass mcpServerExpression: 'this'.
+    if (topLevelFunctions != null) {
+      for (final fn in topLevelFunctions) {
+        registrationParts.add(
+          _generateHandlerRegistration(fn, mcpServerExpression: 'this'),
+        );
+      }
+    }
+
+    final handlerRegistrations = registrationParts.join('\n\n');
 
     // Generate usage capabilities
-    final availableTools = methods
+    final allElements = <ExecutableElement>[
+      ...methods,
+      if (topLevelFunctions != null) ...topLevelFunctions,
+    ];
+
+    final availableTools = allElements
         .where((m) => _getAnnotationType(m) == 'MCPTool')
         .map((m) => _getAnnotationName(m))
         .toList();
-    final availableResources = methods
+    final availableResources = allElements
         .where((m) => _getAnnotationType(m) == 'MCPResource')
         .map((m) => _getAnnotationName(m))
         .toList();
-    final availablePrompts = methods
+    final availablePrompts = allElements
         .where((m) => _getAnnotationType(m) == 'MCPPrompt')
         .map((m) => _getAnnotationName(m))
         .toList();
@@ -186,39 +221,21 @@ class MCPGenerator extends Generator {
     );
   }
 
-  /// Generate a standalone registration function for top-level annotated
-  /// functions. The generated function takes an [MCPServer] parameter and
-  /// registers all annotated top-level functions as MCP handlers.
-  String _generateTopLevelRegistration(
-    List<TopLevelFunctionElement> functions,
-    String sourceFile,
-  ) {
-    final functionName = _registrationFunctionName(sourceFile);
-
-    // Generate handler registrations using server. prefix
-    final handlerRegistrations = functions
-        .map((fn) => _generateHandlerRegistration(fn, serverPrefix: 'server.'))
-        .join('\n\n');
-
-    return TemplateEngine.renderTemplateFromString(
-      TemplateEngine.topLevelRegistrationTemplate,
-      {
-        'sourceFile': sourceFile,
-        'registrationFunctionName': functionName,
-        'handlerRegistrations': handlerRegistrations,
-      },
-    );
-  }
-
   /// Generate handler registration for a single executable element
   /// (either a class method or a top-level function).
   ///
   /// When [serverPrefix] is non-empty (e.g. 'server.'), the generated
   /// `registerTool` / `registerResource` / `registerPrompt` calls are
   /// prefixed with it, e.g. `server.registerTool(...)`.
+  ///
+  /// When [mcpServerExpression] is provided (e.g. 'this'), it is used as the
+  /// value for MCPServer-typed parameters instead of the default
+  /// `server as ConcreteType`.  This is used when top-level functions are
+  /// merged into a class extension.
   String _generateHandlerRegistration(
     ExecutableElement method, {
     String serverPrefix = '',
+    String? mcpServerExpression,
   }) {
     final annotationType = _getAnnotationType(method);
     final annotationName = _getAnnotationName(method);
@@ -300,11 +317,15 @@ class MCPGenerator extends Generator {
       );
       if (serverParam != null) {
         final serverParamName = serverParam.name as String;
-        final serverParamType = _getTypeString(serverParam.type as DartType);
-        // Cast server to the concrete type if it's not plain MCPServer
-        final castExpr = serverParamType == 'MCPServer'
-            ? 'server'
-            : 'server as $serverParamType';
+        String castExpr;
+        if (mcpServerExpression != null) {
+          castExpr = mcpServerExpression;
+        } else {
+          final serverParamType = _getTypeString(serverParam.type as DartType);
+          castExpr = serverParamType == 'MCPServer'
+              ? 'server'
+              : 'server as $serverParamType';
+        }
         if (serverParam.isNamed) {
           namedArgs.add('$serverParamName: $castExpr');
         }
@@ -316,10 +337,14 @@ class MCPGenerator extends Generator {
         if (!p.isRequiredPositional || p.name == null) continue;
         if (_isMCPToolContext(p)) continue;
         if (_isMCPServerParam(p)) {
-          final pType = _getTypeString(p.type);
-          positionalParts.add(
-            pType == 'MCPServer' ? 'server' : 'server as $pType',
-          );
+          if (mcpServerExpression != null) {
+            positionalParts.add(mcpServerExpression);
+          } else {
+            final pType = _getTypeString(p.type);
+            positionalParts.add(
+              pType == 'MCPServer' ? 'server' : 'server as $pType',
+            );
+          }
         } else {
           positionalParts.add(p.name!);
         }
@@ -848,5 +873,56 @@ class MCPGenerator extends Generator {
   String _capitalizeFirst(String input) {
     if (input.isEmpty) return input;
     return input[0].toUpperCase() + input.substring(1);
+  }
+
+  /// Check if a [ClassElement] is a subclass of MCPServer.
+  ///
+  /// Walks the supertype chain to detect MCPServer anywhere in the hierarchy.
+  bool _isMCPServerSubclass(ClassElement element) {
+    InterfaceType? current = element.supertype;
+    while (current != null) {
+      if (current.element.name == 'MCPServer') return true;
+      current = current.superclass;
+    }
+    return false;
+  }
+
+  /// Scan all libraries imported by [libraryElement] and collect annotated
+  /// top-level functions.
+  ///
+  /// This enables the "one generated file" pattern: `server.dart` imports
+  /// standalone tool files, the generator discovers their annotations, and
+  /// bundles all registrations into `server.mcp.dart`.
+  List<TopLevelFunctionElement> _collectImportedAnnotatedFunctions(
+    LibraryElement libraryElement,
+  ) {
+    final results = <TopLevelFunctionElement>[];
+    final visited = <String>{};
+
+    for (final imported in libraryElement.firstFragment.importedLibraries) {
+      final uri = imported.uri.toString();
+      // Skip dart: and package: libraries that aren't ours
+      if (uri.startsWith('dart:')) continue;
+      // Skip the mcp_server_dart package itself
+      if (uri.startsWith('package:mcp_server_dart/')) continue;
+      // Avoid visiting the same library twice
+      if (!visited.add(uri)) continue;
+
+      // Walk all top-level functions in this imported library
+      for (final fn in imported.topLevelFunctions) {
+        final name = fn.name;
+        if (name == null ||
+            name.isEmpty ||
+            fn.isPrivate ||
+            name.startsWith('_')) {
+          continue;
+        }
+        if (_hasAnyMCPAnnotation(fn)) {
+          results.add(fn);
+        }
+      }
+    }
+
+    return results;
   }
 }
