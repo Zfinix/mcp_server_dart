@@ -13,7 +13,8 @@ import 'template_engine.dart';
 
 // Fully qualified type names for annotation checking
 const _toolTypeName = 'package:mcp_server_dart/src/annotations.dart#tool';
-const _resourceTypeName = 'package:mcp_server_dart/src/annotations.dart#resource';
+const _resourceTypeName =
+    'package:mcp_server_dart/src/annotations.dart#resource';
 const _promptTypeName = 'package:mcp_server_dart/src/annotations.dart#prompt';
 const _paramTypeName = 'package:mcp_server_dart/src/annotations.dart#param';
 
@@ -21,7 +22,8 @@ const _paramTypeName = 'package:mcp_server_dart/src/annotations.dart#param';
 Builder mcpBuilder(BuilderOptions options) =>
     LibraryBuilder(MCPGenerator(), generatedExtension: '.mcp.dart');
 
-/// Simple generator that processes all methods in MCP classes
+/// Generator that processes annotated methods in MCP classes and
+/// annotated top-level functions to produce registration code.
 class MCPGenerator extends Generator {
   static final _logger = Logger('MCPGenerator');
 
@@ -32,15 +34,21 @@ class MCPGenerator extends Generator {
   ]);
   static const _mcpResourceChecker = TypeChecker.any([
     TypeChecker.fromUrl(_resourceTypeName),
-    TypeChecker.fromUrl('package:mcp_server_dart/src/annotations.dart#MCPResource'),
+    TypeChecker.fromUrl(
+      'package:mcp_server_dart/src/annotations.dart#MCPResource',
+    ),
   ]);
   static const _mcpPromptChecker = TypeChecker.any([
     TypeChecker.fromUrl(_promptTypeName),
-    TypeChecker.fromUrl('package:mcp_server_dart/src/annotations.dart#MCPPrompt'),
+    TypeChecker.fromUrl(
+      'package:mcp_server_dart/src/annotations.dart#MCPPrompt',
+    ),
   ]);
   static const _mcpParamChecker = TypeChecker.any([
     TypeChecker.fromUrl(_paramTypeName),
-    TypeChecker.fromUrl('package:mcp_server_dart/src/annotations.dart#MCPParam'),
+    TypeChecker.fromUrl(
+      'package:mcp_server_dart/src/annotations.dart#MCPParam',
+    ),
   ]);
 
   @override
@@ -51,7 +59,10 @@ class MCPGenerator extends Generator {
     // Check if this library has any MCP annotations at all
     bool hasAnyMCPAnnotations = false;
 
-    // Process all classes in the library
+    // Collect annotated top-level functions
+    final annotatedTopLevelFunctions = <TopLevelFunctionElement>[];
+
+    // Process all elements in the library
     for (final element in library.allElements) {
       if (element is ClassElement) {
         final className = element.name;
@@ -77,23 +88,58 @@ class MCPGenerator extends Generator {
             );
           }
         }
+      } else if (element is TopLevelFunctionElement) {
+        // Top-level functions with MCP annotations
+        if (element.name != null &&
+            !element.isPrivate &&
+            !element.name!.startsWith('_') &&
+            _hasAnyMCPAnnotation(element)) {
+          annotatedTopLevelFunctions.add(element);
+        }
       }
+    }
+
+    // Generate registration function for annotated top-level functions
+    if (annotatedTopLevelFunctions.isNotEmpty) {
+      hasAnyMCPAnnotations = true;
+      buffer.writeln(
+        _generateTopLevelRegistration(annotatedTopLevelFunctions, sourceFile),
+      );
     }
 
     // Only return generated code if we actually found MCP annotations
     if (!hasAnyMCPAnnotations) return null;
+
+    // Prepend part-of header (LibraryBuilder does not add this automatically)
+    final output = StringBuffer();
+    output.writeln('// ignore_for_file: type=lint');
+    output.writeln("part of '$sourceFile';");
+    output.writeln();
+    output.write(buffer.toString());
 
     // Format the generated code with dart_style
     final formatter = DartFormatter(
       languageVersion: DartFormatter.latestLanguageVersion,
     );
     try {
-      return formatter.format(buffer.toString());
+      return formatter.format(output.toString());
     } catch (e) {
       // If formatting fails, return unformatted code
       _logger.warning('Failed to format generated code: $e');
-      return buffer.toString();
+      return output.toString();
     }
+  }
+
+  /// Derive a registration function name from the source file name.
+  ///
+  /// e.g. 'connection_tools.dart' -> 'registerConnectionToolsHandlers'
+  String _registrationFunctionName(String sourceFile) {
+    final baseName = sourceFile.replaceAll('.dart', '');
+    final parts = baseName.split('_');
+    final camelCase = parts
+        .map((p) => p.isEmpty ? '' : '${p[0].toUpperCase()}${p.substring(1)}')
+        .join('');
+    return 'register${camelCase}Handlers';
   }
 
   String _generateExtension(
@@ -140,8 +186,40 @@ class MCPGenerator extends Generator {
     );
   }
 
-  /// Generate handler registration for a single method
-  String _generateHandlerRegistration(MethodElement method) {
+  /// Generate a standalone registration function for top-level annotated
+  /// functions. The generated function takes an [MCPServer] parameter and
+  /// registers all annotated top-level functions as MCP handlers.
+  String _generateTopLevelRegistration(
+    List<TopLevelFunctionElement> functions,
+    String sourceFile,
+  ) {
+    final functionName = _registrationFunctionName(sourceFile);
+
+    // Generate handler registrations using server. prefix
+    final handlerRegistrations = functions
+        .map((fn) => _generateHandlerRegistration(fn, serverPrefix: 'server.'))
+        .join('\n\n');
+
+    return TemplateEngine.renderTemplateFromString(
+      TemplateEngine.topLevelRegistrationTemplate,
+      {
+        'sourceFile': sourceFile,
+        'registrationFunctionName': functionName,
+        'handlerRegistrations': handlerRegistrations,
+      },
+    );
+  }
+
+  /// Generate handler registration for a single executable element
+  /// (either a class method or a top-level function).
+  ///
+  /// When [serverPrefix] is non-empty (e.g. 'server.'), the generated
+  /// `registerTool` / `registerResource` / `registerPrompt` calls are
+  /// prefixed with it, e.g. `server.registerTool(...)`.
+  String _generateHandlerRegistration(
+    ExecutableElement method, {
+    String serverPrefix = '',
+  }) {
     final annotationType = _getAnnotationType(method);
     final annotationName = _getAnnotationName(method);
     final annotationDescription = _getAnnotationDescription(method);
@@ -165,9 +243,12 @@ class MCPGenerator extends Generator {
     String returnStatement = '';
 
     if (annotationType == 'MCPTool') {
-      // Generate parameter extractions for tools (excluding MCPToolContext)
+      // Generate parameter extractions for tools
+      // (excluding MCPToolContext and MCPServer params — these are injected)
       final extractions = method.formalParameters
-          .where((param) => !_isMCPToolContext(param))
+          .where(
+            (param) => !_isMCPToolContext(param) && !_isMCPServerParam(param),
+          )
           .map((param) {
             final paramName = param.name;
             if (paramName == null) return '';
@@ -190,20 +271,17 @@ class MCPGenerator extends Generator {
       parameterExtractions = extractions;
 
       // Generate method call
-      // Positional args (excluding MCPToolContext)
-      final positionalArgs = method.formalParameters
+      // Positional args (excluding MCPToolContext and MCPServer)
+
+      // Named args (excluding MCPToolContext and MCPServer — we'll add those separately)
+      final namedArgs = method.formalParameters
           .where(
             (p) =>
-                p.isRequiredPositional &&
+                p.isNamed &&
                 p.name != null &&
-                !_isMCPToolContext(p),
+                !_isMCPToolContext(p) &&
+                !_isMCPServerParam(p),
           )
-          .map((p) => p.name!)
-          .join(', ');
-
-      // Named args (excluding MCPToolContext, we'll add it separately)
-      final namedArgs = method.formalParameters
-          .where((p) => p.isNamed && p.name != null && !_isMCPToolContext(p))
           .map((p) => '${p.name}: ${p.name}')
           .toList();
 
@@ -215,8 +293,40 @@ class MCPGenerator extends Generator {
         namedArgs.add('context: context');
       }
 
+      // Check if method accepts an MCPServer parameter and pass `server`
+      final serverParam = method.formalParameters.cast<dynamic>().firstWhere(
+        (p) => _isMCPServerParam(p),
+        orElse: () => null,
+      );
+      if (serverParam != null) {
+        final serverParamName = serverParam.name as String;
+        final serverParamType = _getTypeString(serverParam.type as DartType);
+        // Cast server to the concrete type if it's not plain MCPServer
+        final castExpr = serverParamType == 'MCPServer'
+            ? 'server'
+            : 'server as $serverParamType';
+        if (serverParam.isNamed) {
+          namedArgs.add('$serverParamName: $castExpr');
+        }
+      }
+
+      // Build positional args list (server param may be positional)
+      final positionalParts = <String>[];
+      for (final p in method.formalParameters) {
+        if (!p.isRequiredPositional || p.name == null) continue;
+        if (_isMCPToolContext(p)) continue;
+        if (_isMCPServerParam(p)) {
+          final pType = _getTypeString(p.type);
+          positionalParts.add(
+            pType == 'MCPServer' ? 'server' : 'server as $pType',
+          );
+        } else {
+          positionalParts.add(p.name!);
+        }
+      }
+
       final args = [
-        if (positionalArgs.isNotEmpty) positionalArgs,
+        if (positionalParts.isNotEmpty) positionalParts.join(', '),
         if (namedArgs.isNotEmpty) namedArgs.join(', '),
       ].where((s) => s.isNotEmpty).join(', ');
 
@@ -238,6 +348,7 @@ class MCPGenerator extends Generator {
       return TemplateEngine.renderTemplateFromString(
         TemplateEngine.toolHandlerTemplate,
         {
+          'serverPrefix': serverPrefix,
           'annotationName': annotationName,
           'methodDoc': methodDocComment,
           'parameterExtractions': parameterExtractions,
@@ -286,6 +397,7 @@ class MCPGenerator extends Generator {
       return TemplateEngine.renderTemplateFromString(
         TemplateEngine.resourceHandlerTemplate,
         {
+          'serverPrefix': serverPrefix,
           'annotationName': annotationName,
           'methodDoc': methodDocComment,
           'returnStatement': returnStatement,
@@ -346,6 +458,7 @@ class MCPGenerator extends Generator {
       return TemplateEngine.renderTemplateFromString(
         TemplateEngine.promptHandlerTemplate,
         {
+          'serverPrefix': serverPrefix,
           'annotationName': annotationName,
           'methodDoc': methodDocComment,
           'parameterExtractions': parameterExtractions,
@@ -411,47 +524,67 @@ class MCPGenerator extends Generator {
     return typeString.contains('MCPToolContext');
   }
 
-  /// Check if a method has any MCP annotation
-  bool _hasAnyMCPAnnotation(MethodElement method) {
-    // Use the type checkers to properly detect MCP annotations
-    return _mcpToolChecker.hasAnnotationOfExact(method) ||
-        _mcpResourceChecker.hasAnnotationOfExact(method) ||
-        _mcpPromptChecker.hasAnnotationOfExact(method);
+  /// Check if a parameter is of type MCPServer or a subclass thereof.
+  ///
+  /// These parameters are automatically injected by the generated registration
+  /// function and should not appear in the tool's input schema.
+  bool _isMCPServerParam(dynamic param) {
+    final paramType = param.type;
+    if (paramType is! InterfaceType) return false;
+    // Walk the supertype chain looking for MCPServer
+    InterfaceType? current = paramType;
+    while (current != null) {
+      final name = current.element.name;
+      if (name == 'MCPServer') return true;
+      current = current.superclass;
+    }
+    return false;
   }
 
-  /// Get the annotation type for a method
-  String _getAnnotationType(MethodElement method) {
-    if (_mcpToolChecker.hasAnnotationOfExact(method)) {
+  /// Check if an element has any MCP annotation.
+  ///
+  /// Works with both [MethodElement] (class methods) and
+  /// [FunctionElement] (top-level functions).
+  bool _hasAnyMCPAnnotation(Element element) {
+    // Use the type checkers to properly detect MCP annotations
+    return _mcpToolChecker.hasAnnotationOfExact(element) ||
+        _mcpResourceChecker.hasAnnotationOfExact(element) ||
+        _mcpPromptChecker.hasAnnotationOfExact(element);
+  }
+
+  /// Get the annotation type for an element.
+  String _getAnnotationType(Element element) {
+    if (_mcpToolChecker.hasAnnotationOfExact(element)) {
       return 'MCPTool';
-    } else if (_mcpResourceChecker.hasAnnotationOfExact(method)) {
+    } else if (_mcpResourceChecker.hasAnnotationOfExact(element)) {
       return 'MCPResource';
-    } else if (_mcpPromptChecker.hasAnnotationOfExact(method)) {
+    } else if (_mcpPromptChecker.hasAnnotationOfExact(element)) {
       return 'MCPPrompt';
     }
     return 'MCPTool'; // Default fallback
   }
 
-  /// Extract the name from the annotation
-  String _getAnnotationName(MethodElement method) {
-    // Try to get the name from the annotation, fallback to method name
-    if (_mcpToolChecker.hasAnnotationOfExact(method)) {
-      final annotation = _mcpToolChecker.firstAnnotationOfExact(method);
+  /// Extract the name from the annotation on an element.
+  String _getAnnotationName(Element element) {
+    // Try to get the name from the annotation, fallback to element name
+    if (_mcpToolChecker.hasAnnotationOfExact(element)) {
+      final annotation = _mcpToolChecker.firstAnnotationOfExact(element);
       if (annotation != null) {
         final nameValue = annotation.getField('name');
         if (nameValue != null && nameValue.toStringValue() != null) {
           return nameValue.toStringValue()!;
         }
       }
-    } else if (_mcpResourceChecker.hasAnnotationOfExact(method)) {
-      final annotation = _mcpResourceChecker.firstAnnotationOfExact(method);
+    } else if (_mcpResourceChecker.hasAnnotationOfExact(element)) {
+      final annotation = _mcpResourceChecker.firstAnnotationOfExact(element);
       if (annotation != null) {
         final nameValue = annotation.getField('name');
         if (nameValue != null && nameValue.toStringValue() != null) {
           return nameValue.toStringValue()!;
         }
       }
-    } else if (_mcpPromptChecker.hasAnnotationOfExact(method)) {
-      final annotation = _mcpPromptChecker.firstAnnotationOfExact(method);
+    } else if (_mcpPromptChecker.hasAnnotationOfExact(element)) {
+      final annotation = _mcpPromptChecker.firstAnnotationOfExact(element);
       if (annotation != null) {
         final nameValue = annotation.getField('name');
         if (nameValue != null && nameValue.toStringValue() != null) {
@@ -460,29 +593,29 @@ class MCPGenerator extends Generator {
       }
     }
 
-    return method.name!;
+    return element.name!;
   }
 
-  /// Extract the description from the annotation
-  String _getAnnotationDescription(MethodElement method) {
-    if (_mcpToolChecker.hasAnnotationOfExact(method)) {
-      final annotation = _mcpToolChecker.firstAnnotationOfExact(method);
+  /// Extract the description from the annotation on an element.
+  String _getAnnotationDescription(Element element) {
+    if (_mcpToolChecker.hasAnnotationOfExact(element)) {
+      final annotation = _mcpToolChecker.firstAnnotationOfExact(element);
       if (annotation != null) {
         final descValue = annotation.getField('description');
         if (descValue != null && descValue.toStringValue() != null) {
           return descValue.toStringValue()!;
         }
       }
-    } else if (_mcpResourceChecker.hasAnnotationOfExact(method)) {
-      final annotation = _mcpResourceChecker.firstAnnotationOfExact(method);
+    } else if (_mcpResourceChecker.hasAnnotationOfExact(element)) {
+      final annotation = _mcpResourceChecker.firstAnnotationOfExact(element);
       if (annotation != null) {
         final descValue = annotation.getField('description');
         if (descValue != null && descValue.toStringValue() != null) {
           return descValue.toStringValue()!;
         }
       }
-    } else if (_mcpPromptChecker.hasAnnotationOfExact(method)) {
-      final annotation = _mcpPromptChecker.firstAnnotationOfExact(method);
+    } else if (_mcpPromptChecker.hasAnnotationOfExact(element)) {
+      final annotation = _mcpPromptChecker.firstAnnotationOfExact(element);
       if (annotation != null) {
         final descValue = annotation.getField('description');
         if (descValue != null && descValue.toStringValue() != null) {
@@ -551,8 +684,8 @@ class MCPGenerator extends Generator {
     return data.isEmpty ? null : data;
   }
 
-  /// Generate JSON schema for method parameters
-  String? _generateInputSchema(MethodElement method) {
+  /// Generate JSON schema for method/function parameters
+  String? _generateInputSchema(ExecutableElement method) {
     // First check if the annotation already has an inputSchema
     if (_mcpToolChecker.hasAnnotationOfExact(method)) {
       final annotation = _mcpToolChecker.firstAnnotationOfExact(method);
@@ -579,6 +712,9 @@ class MCPGenerator extends Generator {
 
       // Skip MCPToolContext parameters - they're not part of the input schema
       if (_isMCPToolContext(param)) continue;
+
+      // Skip MCPServer parameters - injected automatically by registration
+      if (_isMCPServerParam(param)) continue;
 
       final paramType = _getTypeString(param.type);
       final jsonType = _dartTypeToJsonType(paramType);
