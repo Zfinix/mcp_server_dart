@@ -17,6 +17,8 @@ const _toolTypeName = 'package:mcp_server_dart/src/annotations.dart#tool';
 const _resourceTypeName =
     'package:mcp_server_dart/src/annotations.dart#resource';
 const _promptTypeName = 'package:mcp_server_dart/src/annotations.dart#prompt';
+const _completionTypeName =
+    'package:mcp_server_dart/src/annotations.dart#completion';
 const _paramTypeName = 'package:mcp_server_dart/src/annotations.dart#param';
 
 /// Builder function for build.yaml
@@ -43,6 +45,12 @@ class MCPGenerator extends Generator {
     TypeChecker.fromUrl(_promptTypeName),
     TypeChecker.fromUrl(
       'package:mcp_server_dart/src/annotations.dart#MCPPrompt',
+    ),
+  ]);
+  static const _mcpCompletionChecker = TypeChecker.any([
+    TypeChecker.fromUrl(_completionTypeName),
+    TypeChecker.fromUrl(
+      'package:mcp_server_dart/src/annotations.dart#MCPCompletion',
     ),
   ]);
   static const _mcpParamChecker = TypeChecker.any([
@@ -426,8 +434,9 @@ class MCPGenerator extends Generator {
           ? 'await $methodName($callArgs)'
           : '$methodName($callArgs)';
 
-      final returnsResourceContent =
-          method.returnType.toString().contains('MCPResourceContent');
+      final returnsResourceContent = method.returnType.toString().contains(
+        'MCPResourceContent',
+      );
 
       if (returnsResourceContent) {
         returnStatement = 'return $callExpr';
@@ -479,7 +488,9 @@ class MCPGenerator extends Generator {
               callArgs.add(mcpServerExpression);
             } else {
               final pType = _getTypeString(p.type);
-              callArgs.add(pType == 'MCPServer' ? 'server' : 'server as $pType');
+              callArgs.add(
+                pType == 'MCPServer' ? 'server' : 'server as $pType',
+              );
             }
           } else {
             callArgs.add('args');
@@ -520,17 +531,16 @@ class MCPGenerator extends Generator {
               positionalArgs.add(mcpServerExpression);
             } else {
               final pType = _getTypeString(p.type);
-              positionalArgs.add(pType == 'MCPServer' ? 'server' : 'server as $pType');
+              positionalArgs.add(
+                pType == 'MCPServer' ? 'server' : 'server as $pType',
+              );
             }
           } else {
             positionalArgs.add(p.name!);
           }
         }
         final namedArgs = method.formalParameters
-            .where(
-              (p) =>
-                  p.isNamed && p.name != null && !_isMCPServerParam(p),
-            )
+            .where((p) => p.isNamed && p.name != null && !_isMCPServerParam(p))
             .map((p) => '${p.name}: ${p.name}')
             .toList();
         for (final p in method.formalParameters.where(_isMCPServerParam)) {
@@ -571,6 +581,38 @@ class MCPGenerator extends Generator {
           'icons': iconsStr,
           'parameterExtractions': parameterExtractions,
           'returnStatement': returnStatement,
+        },
+      );
+    } else if (annotationType == 'MCPCompletion') {
+      final registerMethod = annotationName.startsWith('mcp://')
+          ? '${serverPrefix}registerResourceCompletion'
+          : '${serverPrefix}registerPromptCompletion';
+
+      final args = <String>[];
+      for (final p in method.formalParameters) {
+        if (_isMCPServerParam(p)) {
+          if (mcpServerExpression != null) {
+            args.add(mcpServerExpression);
+          } else {
+            final pType = _getTypeString(p.type);
+            args.add(pType == 'MCPServer' ? 'server' : 'server as $pType');
+          }
+        } else if (_isMCPCompletionRequestParam(p)) {
+          args.add('request');
+        }
+      }
+
+      final callExpr = method.returnType.toString().contains('Future')
+          ? 'await $methodName(${args.join(', ')})'
+          : '$methodName(${args.join(', ')})';
+
+      return TemplateEngine.renderTemplateFromString(
+        TemplateEngine.completionHandlerTemplate,
+        {
+          'annotationName': annotationName,
+          'methodDoc': methodDocComment,
+          'registerMethod': registerMethod,
+          'returnStatement': 'return $callExpr',
         },
       );
     }
@@ -632,6 +674,13 @@ class MCPGenerator extends Generator {
     return typeString.contains('MCPToolContext');
   }
 
+  /// Check if a parameter is of type MCPCompletionRequest.
+  bool _isMCPCompletionRequestParam(dynamic param) {
+    final paramType = param.type;
+    final typeString = paramType.getDisplayString();
+    return typeString.contains('MCPCompletionRequest');
+  }
+
   /// Check if a parameter is of type MCPServer or a subclass thereof.
   ///
   /// These parameters are automatically injected by the generated registration
@@ -657,7 +706,8 @@ class MCPGenerator extends Generator {
     // Use the type checkers to properly detect MCP annotations
     return _mcpToolChecker.hasAnnotationOfExact(element) ||
         _mcpResourceChecker.hasAnnotationOfExact(element) ||
-        _mcpPromptChecker.hasAnnotationOfExact(element);
+        _mcpPromptChecker.hasAnnotationOfExact(element) ||
+        _mcpCompletionChecker.hasAnnotationOfExact(element);
   }
 
   /// Get the annotation type for an element.
@@ -668,6 +718,8 @@ class MCPGenerator extends Generator {
       return 'MCPResource';
     } else if (_mcpPromptChecker.hasAnnotationOfExact(element)) {
       return 'MCPPrompt';
+    } else if (_mcpCompletionChecker.hasAnnotationOfExact(element)) {
+      return 'MCPCompletion';
     }
     return 'MCPTool'; // Default fallback
   }
@@ -697,6 +749,14 @@ class MCPGenerator extends Generator {
         final nameValue = annotation.getField('name');
         if (nameValue != null && nameValue.toStringValue() != null) {
           return nameValue.toStringValue()!;
+        }
+      }
+    } else if (_mcpCompletionChecker.hasAnnotationOfExact(element)) {
+      final annotation = _mcpCompletionChecker.firstAnnotationOfExact(element);
+      if (annotation != null) {
+        final targetValue = annotation.getField('target');
+        if (targetValue != null && targetValue.toStringValue() != null) {
+          return targetValue.toStringValue()!;
         }
       }
     }
@@ -805,14 +865,23 @@ class MCPGenerator extends Generator {
     final args = <String>[];
     for (final entry in annMap.entries) {
       final key = entry.key?.toStringValue();
-      final value = entry.value?.toBoolValue();
-      if (key == null || value == null) continue;
+      if (key == null) continue;
       switch (key) {
         case 'readOnlyHint':
         case 'destructiveHint':
         case 'idempotentHint':
         case 'openWorldHint':
-          args.add('$key: $value');
+          final boolValue = entry.value?.toBoolValue();
+          if (boolValue != null) {
+            args.add('$key: $boolValue');
+          }
+          break;
+        case 'taskSupport':
+        case 'title':
+          final stringValue = entry.value?.toStringValue();
+          if (stringValue != null && stringValue.isNotEmpty) {
+            args.add("$key: '${_escapeDartString(stringValue)}'");
+          }
           break;
       }
     }
@@ -982,7 +1051,9 @@ class MCPGenerator extends Generator {
 
     if (normalized == 'string') return 'string';
     if (normalized == 'int' || normalized == 'integer') return 'integer';
-    if (normalized == 'double' || normalized == 'num' || normalized == 'number') {
+    if (normalized == 'double' ||
+        normalized == 'num' ||
+        normalized == 'number') {
       return 'number';
     }
     if (normalized == 'bool' || normalized == 'boolean') return 'boolean';

@@ -27,9 +27,10 @@ A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **
 - **📚 JSON Schema**: Automatic input schema generation from method signatures
 - **🧪 Fully tested**: Comprehensive test suite with JSON-RPC command validation
 - **⚡ Production ready**: Current MCP 2025-11-25-aligned protocol implementation with Relic HTTP server
+- **🧠 Modern capabilities**: Built-in support for MCP logging, completions, task-augmented tool calls, and richer initialize metadata
 - **🌐 Modern HTTP**: Built on Relic framework with middleware support, CORS, logging, and health checks
 - **🔧 Monitoring**: Built-in health check endpoints and connection monitoring
-- **📊 SSE Support**: Server-Sent Events for real-time streaming per MCP 2025-06-18 spec
+- **📊 SSE Support**: Server-Sent Events for real-time streaming on the modern MCP streamable HTTP transport
 
 ## 🚀 Quick Start
 
@@ -115,14 +116,16 @@ import 'dart:io';
 import 'package:logging/logging.dart';
 
 void main() async {
-  // Enable logging to see server activity
   Logger.root.level = Level.INFO;
-  Logger.root.onRecord.listen((record) {
-    print('${record.level.name}: ${record.time}: ${record.message}');
-  });
 
   final server = MyMCPServer(); // Handlers auto-registered in constructor
-  
+  server.attachLogger(Logger.root); // Forward Dart LogRecord events to MCP logging
+
+  // Optional: also mirror logs locally for humans
+  Logger.root.onRecord.listen((record) {
+    stderr.writeln('${record.level.name}: ${record.time}: ${record.message}');
+  });
+
   // Choose your transport:
   await server.start();        // For CLI integration (stdio)
   // OR
@@ -139,6 +142,34 @@ void main() async {
 - 🛡️ **CORS Support**: Cross-origin requests enabled by default
 - ⚡ **Graceful Shutdown**: Handles SIGINT/SIGTERM signals properly
 - 🔄 **SSE Streaming**: Server-Sent Events for real-time communication
+
+### MCP logging bridge
+
+If your server already uses `package:logging`, you can forward Dart `LogRecord`
+events directly to MCP `notifications/message`:
+
+```dart
+final server = MyMCPServer();
+server.attachLogger(Logger.root);
+```
+
+Attaching a logger automatically enables MCP logging capability advertisement.
+You can still set `enableLogging: true` explicitly, but it is no longer required
+for the common attached-logger case.
+
+The bridge:
+- respects the client's `logging/setLevel` threshold
+- maps Dart logging levels to MCP logging levels
+- includes message, time, sequence number, and optional error/stack trace
+
+### Auto-advertised capabilities
+
+Some modern MCP capabilities can now be advertised automatically:
+- **Logging**: enabled automatically when a logger is attached with `server.attachLogger(...)`
+- **Completions**: enabled automatically when an `@MCPCompletion(...)` handler is registered
+- **Tasks**: enabled automatically when any tool uses `annotations: {'taskSupport': ...}`
+
+You can still opt in explicitly with `enableLogging: true`, `enableCompletions: true`, or `enableTasks: true`, but they're no longer required for these common cases.
 
 ## 📖 Annotations Reference
 
@@ -183,6 +214,31 @@ String generatePrompt(String context, String task) {
   return 'Generated prompt based on $context and $task';
 }
 ```
+
+### `@MCPCompletion`
+
+Marks a method as a completion provider for a prompt or resource:
+
+```dart
+@MCPCompletion('classify')
+Future<MCPCompletionResult> completeClassify(
+  MCPCompletionRequest request,
+) async {
+  final value = request.argument.value.toLowerCase();
+  return MCPCompletionResult(
+    completion: MCPCompletionData(
+      values: ['bug', 'feature'].where((v) => v.startsWith(value)).toList(),
+      hasMore: false,
+    ),
+  );
+}
+```
+
+Use a plain name like `classify` for prompt completions. Use a full
+`mcp://...` URI to attach a completion provider to a resource. Completion
+capability advertisement is automatic when one or more completion providers
+are registered, though you can still set `enableCompletions: true` explicitly
+if you prefer.
 
 ### `@MCPParam`
 
@@ -297,7 +353,7 @@ if (args.contains('--stdio')) {
 **Transport Options:**
 - **Stdio**: Perfect for Claude Desktop integration and CLI tools
 - **HTTP**: Ideal for web applications, testing, and debugging with [Relic framework](https://pub.dev/packages/relic)
-- **Streamable HTTP**: Latest MCP 2025-06-18 spec with Server-Sent Events support
+- **Streamable HTTP**: Latest MCP 2025-11-25 transport expectations with Server-Sent Events support
 - **Health Monitoring**: Built-in endpoints for production monitoring
 
 ## 🌐 Streamable HTTP Transport (MCP 2025-11-25 aligned)
@@ -308,7 +364,7 @@ The MCP Dart framework now supports the latest **Streamable HTTP** transport spe
 - **Single MCP Endpoint**: `POST/GET /mcp` handles all MCP communication
 - **Server-Sent Events**: Real-time streaming for server-initiated messages
 - **Session Management**: Automatic session ID generation and validation
-- **Protocol Headers**: `MCP-Protocol-Version: 2025-06-18` support
+- **Protocol Headers**: `MCP-Protocol-Version: 2025-11-25` support
 - **Security**: Origin validation and localhost binding for development
 
 ### Testing with MCP Inspector
@@ -332,14 +388,14 @@ npx @modelcontextprotocol/inspector
 curl -X POST http://localhost:8080/mcp \
   -H 'Accept: application/json' \
   -H 'Content-Type: application/json' \
-  -H 'MCP-Protocol-Version: 2025-06-18' \
-  --data '{"jsonrpc":"2.0","id":"1","method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{}}}'
+  -H 'MCP-Protocol-Version: 2025-11-25' \
+  --data '{"jsonrpc":"2.0","id":"1","method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{}}}'
 
 # List tools
 curl -X POST http://localhost:8080/mcp \
   -H 'Accept: application/json' \
   -H 'Content-Type: application/json' \
-  -H 'MCP-Protocol-Version: 2025-06-18' \
+  -H 'MCP-Protocol-Version: 2025-11-25' \
   --data '{"jsonrpc":"2.0","id":"2","method":"tools/list"}'
 
 # Open SSE stream
@@ -459,7 +515,7 @@ void main() {
     test('MCP endpoint works with Streamable HTTP', () async {
       final request = await client.post('localhost', 8081, '/mcp');
       request.headers.set('content-type', 'application/json');
-      request.headers.set('mcp-protocol-version', '2025-06-18');
+      request.headers.set('mcp-protocol-version', '2025-11-25');
       request.write(jsonEncode({
         'jsonrpc': '2.0',
         'id': '1',
@@ -747,7 +803,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ **Code Generation**: Working build_runner integration  
 - ✅ **Transport Layer**: Stdio, HTTP, and Streamable HTTP support with [Relic framework](https://pub.dev/packages/relic)
 - ✅ **HTTP Server**: Production-ready server with middleware, CORS, logging, health checks
-- ✅ **Streamable HTTP**: Full MCP 2025-06-18 spec with Server-Sent Events
+- ✅ **Streamable HTTP**: Full MCP 2025-11-25 spec with Server-Sent Events
 - ✅ **Binary Compilation**: Native executable support with dart compile exe
 - ✅ **Testing**: Comprehensive test suite with JSON-RPC and HTTP endpoint validation
 - ✅ **Examples**: Multiple working examples with logging and monitoring
@@ -755,4 +811,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ **Deployment Options**: Development mode, binaries, Docker, custom naming
 - ✅ **MCP Inspector**: Full compatibility with official MCP Inspector UI and CLI
 
-The framework has been thoroughly tested with real JSON-RPC commands, HTTP endpoints, and the official [MCP Inspector](https://github.com/modelcontextprotocol/inspector). The [Relic](https://pub.dev/packages/relic) integration provides a modern, type-safe foundation for production deployments with comprehensive middleware support and full **MCP 2025-06-18 Streamable HTTP** compliance.
+The framework has been thoroughly tested with real JSON-RPC commands, HTTP endpoints, and the official [MCP Inspector](https://github.com/modelcontextprotocol/inspector). The [Relic](https://pub.dev/packages/relic) integration provides a modern, type-safe foundation for production deployments with comprehensive middleware support and full **MCP 2025-11-25 Streamable HTTP** compliance.

@@ -127,6 +127,32 @@ class prompt {
   });
 }
 
+/// Annotation to mark a method as an MCP completion provider.
+///
+/// The [target] identifies the prompt or resource whose argument should be
+/// completed. Plain names like `classify` are treated as prompt names. Values
+/// starting with `mcp://` are treated as resource URIs.
+///
+/// Example:
+/// ```dart
+/// @MCPCompletion('classify')
+/// Future<MCPCompletionResult> completeClassify(
+///   MCPCompletionRequest request,
+/// ) async {
+///   return MCPCompletionResult(
+///     completion: MCPCompletionData(values: ['bug', 'feature']),
+///   );
+/// }
+/// ```
+class MCPCompletion {
+  /// Prompt name or resource URI to attach this completion provider to.
+  final String target;
+
+  const MCPCompletion(this.target);
+}
+
+typedef completion = MCPCompletion;
+
 /// Annotation to mark a parameter as required or provide additional metadata.
 ///
 /// By default, the generator uses Dart's type system to determine if a parameter
@@ -147,10 +173,5 @@ class param {
   /// Example value for this parameter
   final dynamic example;
 
-  const param({
-    this.required,
-    this.description = '',
-    this.type,
-    this.example,
-  });
+  const param({this.required, this.description = '', this.type, this.example});
 }

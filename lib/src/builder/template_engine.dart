@@ -112,6 +112,16 @@ extension {{className}}Registration on {{className}} {
       },
 {{title}}{{icons}}    );''';
 
+  static const String completionHandlerTemplate =
+      '''    // Register handler for @MCPCompletion('{{annotationName}}')
+{{methodDoc}}
+    {{registerMethod}}(
+      '{{annotationName}}',
+      (request) async {
+        {{returnStatement}};
+      },
+    );''';
+
   /// Template for top-level function registration.
   ///
   /// Generates a standalone function that takes an MCPServer and registers

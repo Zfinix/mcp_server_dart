@@ -35,10 +35,7 @@ class HelloWorldMCP extends MCPServer {
       },
       description: 'Greet someone by name',
       title: 'Friendly Greeting',
-      annotations: MCPToolAnnotations(
-        readOnlyHint: true,
-        idempotentHint: true,
-      ),
+      annotations: MCPToolAnnotations(readOnlyHint: true, idempotentHint: true),
       icons: const [
         MCPIcon(
           src: 'https://example.com/icons/hello.svg',
@@ -66,10 +63,7 @@ class HelloWorldMCP extends MCPServer {
       },
       description: 'Echo back a message',
       title: 'Echo Message',
-      annotations: MCPToolAnnotations(
-        readOnlyHint: true,
-        idempotentHint: true,
-      ),
+      annotations: MCPToolAnnotations(readOnlyHint: true, idempotentHint: true),
       icons: const [
         MCPIcon(
           src: 'https://example.com/icons/echo.svg',

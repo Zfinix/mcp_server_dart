@@ -156,6 +156,20 @@ void main() {
     });
   });
 
+  group('MCPCompletion Annotation', () {
+    test('should create completion annotation for a prompt target', () {
+      const kCompletion = MCPCompletion('classify');
+
+      expect(kCompletion.target, equals('classify'));
+    });
+
+    test('should create completion annotation for a resource uri', () {
+      const kCompletion = MCPCompletion('mcp://example-status');
+
+      expect(kCompletion.target, equals('mcp://example-status'));
+    });
+  });
+
   group('MCPParam Annotation', () {
     test('should create param annotation with defaults', () {
       const kParam = param();

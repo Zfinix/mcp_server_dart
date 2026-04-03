@@ -380,9 +380,7 @@ class HttpHandlers {
         );
 
         final response = await handleRequest(mcpRequest);
-        if (sessionId == null) {
-          sessionId = _sessionManager.generateSessionId();
-        }
+        sessionId ??= _sessionManager.generateSessionId();
         if (!_sessionManager.isValidSession(sessionId)) {
           _sessionManager.createSession(sessionId);
         } else {

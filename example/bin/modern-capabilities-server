@@ -1,0 +1,5 @@
+#!/usr/bin/env dart
+
+import '../lib/advanced/modern_capabilities.dart' as app;
+
+Future<void> main(List<String> args) => app.main(args);
