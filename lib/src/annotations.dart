@@ -28,10 +28,26 @@ class tool {
   /// A description of what this tool does
   final String description;
 
+  /// Optional human-friendly display title.
+  final String? title;
+
   /// Optional schema for input parameters (JSON Schema format)
   final Map<String, dynamic>? inputSchema;
 
-  const tool(this.name, {this.description = '', this.inputSchema});
+  /// Optional icon sources metadata.
+  final List<Map<String, dynamic>>? icons;
+
+  /// Optional tool behavior metadata hints.
+  final Map<String, dynamic>? annotations;
+
+  const tool(
+    this.name, {
+    this.description = '',
+    this.title,
+    this.inputSchema,
+    this.icons,
+    this.annotations,
+  });
 }
 
 /// Annotation to mark a method as an MCP resource.
@@ -57,10 +73,22 @@ class resource {
   /// A description of what this resource contains
   final String description;
 
+  /// Optional human-friendly display title.
+  final String? title;
+
   /// The MIME type of the resource content
   final String? mimeType;
 
-  const resource(this.name, {this.description = '', this.mimeType});
+  /// Optional icon sources metadata.
+  final List<Map<String, dynamic>>? icons;
+
+  const resource(
+    this.name, {
+    this.description = '',
+    this.title,
+    this.mimeType,
+    this.icons,
+  });
 }
 
 /// Annotation to mark a method as an MCP prompt.
@@ -81,10 +109,22 @@ class prompt {
   /// A description of what this prompt does
   final String description;
 
+  /// Optional human-friendly display title.
+  final String? title;
+
   /// Optional arguments that this prompt accepts
   final List<String>? arguments;
 
-  const prompt(this.name, {this.description = '', this.arguments});
+  /// Optional icon sources metadata.
+  final List<Map<String, dynamic>>? icons;
+
+  const prompt(
+    this.name, {
+    this.description = '',
+    this.title,
+    this.arguments,
+    this.icons,
+  });
 }
 
 /// Annotation to mark a parameter as required or provide additional metadata.

@@ -94,7 +94,7 @@ void main() {
           method: 'initialize',
           id: '1',
           params: {
-            'protocolVersion': '2025-06-18',
+            'protocolVersion': '2025-11-25',
             'capabilities': {},
             'clientInfo': {'name': 'test-client', 'version': '1.0.0'},
           },
@@ -107,7 +107,7 @@ void main() {
         expect(response.result, isNotNull);
 
         final result = response.result as Map<String, dynamic>;
-        expect(result['protocolVersion'], equals('2025-06-18'));
+        expect(result['protocolVersion'], equals('2025-11-25'));
         expect(result['capabilities'], isNotNull);
         expect(result['serverInfo']['name'], equals('test-server'));
         expect(result['serverInfo']['version'], equals('1.0.0'));

@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
@@ -126,7 +127,7 @@ class MCPGenerator extends Generator {
         hasAnyMCPAnnotations = true;
         buffer.writeln(
           _generateExtension(
-            mcpServerClass!.name!,
+            mcpServerClass.name!,
             mcpServerMethods,
             sourceFile,
             topLevelFunctions: allTopLevelFunctions,
@@ -245,6 +246,9 @@ class MCPGenerator extends Generator {
     final annotationType = _getAnnotationType(method);
     final annotationName = _getAnnotationName(method);
     final annotationDescription = _getAnnotationDescription(method);
+    final annotationTitle = _getAnnotationTitle(method);
+    final annotationIcons = _getAnnotationIconsLiteral(method);
+    final toolAnnotations = _getToolAnnotationsLiteral(method);
     final methodName = method.name!;
     final methodDoc = method.documentationComment;
 
@@ -374,6 +378,15 @@ class MCPGenerator extends Generator {
       } else {
         inputSchemaStr = '      inputSchema: {},';
       }
+      final titleStr = annotationTitle != null
+          ? "      title: '${_escapeDartString(annotationTitle)}',"
+          : '';
+      final annotationsStr = toolAnnotations != null
+          ? '      annotations: $toolAnnotations,'
+          : '';
+      final iconsStr = annotationIcons != null
+          ? '      icons: $annotationIcons,'
+          : '';
 
       return TemplateEngine.renderTemplateFromString(
         TemplateEngine.toolHandlerTemplate,
@@ -386,6 +399,9 @@ class MCPGenerator extends Generator {
           'description': annotationDescription.isNotEmpty
               ? annotationDescription
               : 'Generated handler for $methodName',
+          'title': titleStr,
+          'annotations': annotationsStr,
+          'icons': iconsStr,
           'inputSchema': inputSchemaStr,
         },
       );
@@ -426,12 +442,21 @@ class MCPGenerator extends Generator {
         )''';
       }
 
+      final titleStr = annotationTitle != null
+          ? "      title: '${_escapeDartString(annotationTitle)}',"
+          : '';
+      final iconsStr = annotationIcons != null
+          ? '      icons: $annotationIcons,'
+          : '';
+
       return TemplateEngine.renderTemplateFromString(
         TemplateEngine.resourceHandlerTemplate,
         {
           'serverPrefix': serverPrefix,
           'annotationName': annotationName,
           'methodDoc': methodDocComment,
+          'title': titleStr,
+          'icons': iconsStr,
           'returnStatement': returnStatement,
         },
       );
@@ -529,12 +554,21 @@ class MCPGenerator extends Generator {
         returnStatement = 'return $methodName($args)';
       }
 
+      final titleStr = annotationTitle != null
+          ? "      title: '${_escapeDartString(annotationTitle)}',"
+          : '';
+      final iconsStr = annotationIcons != null
+          ? '      icons: $annotationIcons,'
+          : '';
+
       return TemplateEngine.renderTemplateFromString(
         TemplateEngine.promptHandlerTemplate,
         {
           'serverPrefix': serverPrefix,
           'annotationName': annotationName,
           'methodDoc': methodDocComment,
+          'title': titleStr,
+          'icons': iconsStr,
           'parameterExtractions': parameterExtractions,
           'returnStatement': returnStatement,
         },
@@ -670,6 +704,23 @@ class MCPGenerator extends Generator {
     return element.name!;
   }
 
+  /// Extract the title from the annotation on an element.
+  String? _getAnnotationTitle(Element element) {
+    DartObject? annotation;
+    if (_mcpToolChecker.hasAnnotationOfExact(element)) {
+      annotation = _mcpToolChecker.firstAnnotationOfExact(element);
+    } else if (_mcpResourceChecker.hasAnnotationOfExact(element)) {
+      annotation = _mcpResourceChecker.firstAnnotationOfExact(element);
+    } else if (_mcpPromptChecker.hasAnnotationOfExact(element)) {
+      annotation = _mcpPromptChecker.firstAnnotationOfExact(element);
+    }
+
+    if (annotation == null) return null;
+    final titleValue = annotation.getField('title');
+    final title = titleValue?.toStringValue();
+    return (title != null && title.isNotEmpty) ? title : null;
+  }
+
   /// Extract the description from the annotation on an element.
   String _getAnnotationDescription(Element element) {
     if (_mcpToolChecker.hasAnnotationOfExact(element)) {
@@ -699,6 +750,75 @@ class MCPGenerator extends Generator {
     }
 
     return '';
+  }
+
+  String? _getAnnotationIconsLiteral(Element element) {
+    DartObject? annotation;
+    if (_mcpToolChecker.hasAnnotationOfExact(element)) {
+      annotation = _mcpToolChecker.firstAnnotationOfExact(element);
+    } else if (_mcpResourceChecker.hasAnnotationOfExact(element)) {
+      annotation = _mcpResourceChecker.firstAnnotationOfExact(element);
+    } else if (_mcpPromptChecker.hasAnnotationOfExact(element)) {
+      annotation = _mcpPromptChecker.firstAnnotationOfExact(element);
+    }
+    final iconsField = annotation?.getField('icons');
+    final iconObjects = iconsField?.toListValue();
+    if (iconObjects == null || iconObjects.isEmpty) return null;
+
+    final parts = <String>[];
+    for (final icon in iconObjects) {
+      final iconMap = icon.toMapValue();
+      if (iconMap == null || iconMap.isEmpty) continue;
+
+      String? readStringField(String key) {
+        for (final entry in iconMap.entries) {
+          final entryKey = entry.key?.toStringValue();
+          if (entryKey == key) {
+            return entry.value?.toStringValue();
+          }
+        }
+        return null;
+      }
+
+      final src = readStringField('src');
+      if (src == null || src.isEmpty) continue;
+      final mimeType = readStringField('mimeType');
+      final sizes = readStringField('sizes');
+      parts.add(
+        "MCPIcon(src: '${_escapeDartString(src)}'"
+        "${mimeType != null ? ", mimeType: '${_escapeDartString(mimeType)}'" : ''}"
+        "${sizes != null ? ", sizes: '${_escapeDartString(sizes)}'" : ''})",
+      );
+    }
+
+    if (parts.isEmpty) return null;
+    return '[${parts.join(', ')}]';
+  }
+
+  String? _getToolAnnotationsLiteral(Element element) {
+    if (!_mcpToolChecker.hasAnnotationOfExact(element)) return null;
+    final annotation = _mcpToolChecker.firstAnnotationOfExact(element);
+    final annField = annotation?.getField('annotations');
+    final annMap = annField?.toMapValue();
+    if (annMap == null || annMap.isEmpty) return null;
+
+    final args = <String>[];
+    for (final entry in annMap.entries) {
+      final key = entry.key?.toStringValue();
+      final value = entry.value?.toBoolValue();
+      if (key == null || value == null) continue;
+      switch (key) {
+        case 'readOnlyHint':
+        case 'destructiveHint':
+        case 'idempotentHint':
+        case 'openWorldHint':
+          args.add('$key: $value');
+          break;
+      }
+    }
+
+    if (args.isEmpty) return null;
+    return 'MCPToolAnnotations(${args.join(', ')})';
   }
 
   /// Extract MCPParam annotation data from a parameter
@@ -854,15 +974,22 @@ class MCPGenerator extends Generator {
 
   /// Convert Dart type to JSON Schema type
   String _dartTypeToJsonType(String dartType) {
-    return switch (dartType.toLowerCase()) {
-      'string' => 'string',
-      'int' || 'integer' => 'integer',
-      'double' || 'num' || 'number' => 'number',
-      'bool' || 'boolean' => 'boolean',
-      'list<dynamic>' => 'array',
-      'map<string, dynamic>' => 'object',
-      _ => 'string', // Default fallback
-    };
+    final normalized = dartType
+        .trim()
+        .replaceAll('?', '')
+        .replaceAll('Object?', 'Object')
+        .toLowerCase();
+
+    if (normalized == 'string') return 'string';
+    if (normalized == 'int' || normalized == 'integer') return 'integer';
+    if (normalized == 'double' || normalized == 'num' || normalized == 'number') {
+      return 'number';
+    }
+    if (normalized == 'bool' || normalized == 'boolean') return 'boolean';
+    if (normalized.startsWith('list<') || normalized == 'list') return 'array';
+    if (normalized.startsWith('map<') || normalized == 'map') return 'object';
+
+    return 'string'; // Default fallback
   }
 
   /// Convert a Map to a string representation for code generation
@@ -916,6 +1043,15 @@ class MCPGenerator extends Generator {
     } else {
       return value.toString();
     }
+  }
+
+  String _escapeDartString(String input) {
+    return input
+        .replaceAll('\\', '\\\\')
+        .replaceAll("'", "\\'")
+        .replaceAll(r'$', r'\$')
+        .replaceAll('\n', '\\n')
+        .replaceAll('\r', '\\r');
   }
 
   /// Capitalize first letter of a string

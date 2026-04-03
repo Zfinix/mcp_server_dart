@@ -1,3 +1,13 @@
+## 1.3.0
+
+- 🚀 **Protocol alignment**: Updated the framework default protocol version from `2025-06-18` to `2025-11-25`
+- 🏷️ **Richer metadata**: Added support for optional `title` and `icons` metadata on tools, resources, and prompts
+- 🔐 **Tool annotations**: Added framework support for MCP tool annotation hints (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
+- 📦 **Structured tool results**: Added `MCPToolResult.structuredContent` and `resourceLinks` support while preserving existing content behavior
+- 🧰 **Generator updates**: Extended code generation so annotation metadata can flow into runtime registrations
+- 🧪 **Compatibility fixes**: Preserved list-return behavior for existing tool handlers and normalized loosely typed argument maps for tool/prompt calls
+- 📚 **Docs refresh**: Updated README claims to reflect the current MCP protocol alignment
+
 ## 1.2.0
 
 - 🎯 **@MCPParam Implementation**: The `@MCPParam` annotation is now fully functional! Add rich metadata to your parameters with custom descriptions, examples, type overrides, and required/optional control.

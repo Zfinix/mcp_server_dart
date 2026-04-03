@@ -102,28 +102,92 @@ class MCPError {
   };
 }
 
+/// Icon metadata for tools/resources/prompts.
+class MCPIcon {
+  final String src;
+  final String? mimeType;
+  final String? sizes;
+
+  const MCPIcon({required this.src, this.mimeType, this.sizes});
+
+  factory MCPIcon.fromJson(Map<String, dynamic> json) => MCPIcon(
+    src: json['src'] as String,
+    mimeType: json['mimeType'] as String?,
+    sizes: json['sizes'] as String?,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'src': src,
+    if (mimeType != null) 'mimeType': mimeType,
+    if (sizes != null) 'sizes': sizes,
+  };
+}
+
+/// Tool annotations / metadata hints.
+class MCPToolAnnotations {
+  final bool? readOnlyHint;
+  final bool? destructiveHint;
+  final bool? idempotentHint;
+  final bool? openWorldHint;
+
+  const MCPToolAnnotations({
+    this.readOnlyHint,
+    this.destructiveHint,
+    this.idempotentHint,
+    this.openWorldHint,
+  });
+
+  factory MCPToolAnnotations.fromJson(Map<String, dynamic> json) =>
+      MCPToolAnnotations(
+        readOnlyHint: json['readOnlyHint'] as bool?,
+        destructiveHint: json['destructiveHint'] as bool?,
+        idempotentHint: json['idempotentHint'] as bool?,
+        openWorldHint: json['openWorldHint'] as bool?,
+      );
+
+  Map<String, dynamic> toJson() => {
+    if (readOnlyHint != null) 'readOnlyHint': readOnlyHint,
+    if (destructiveHint != null) 'destructiveHint': destructiveHint,
+    if (idempotentHint != null) 'idempotentHint': idempotentHint,
+    if (openWorldHint != null) 'openWorldHint': openWorldHint,
+  };
+}
+
 /// Tool definition
 class MCPToolDefinition {
   final String name;
   final String description;
+  final String? title;
   final Map<String, dynamic>? inputSchema;
+  final MCPToolAnnotations? annotations;
+  final List<MCPIcon>? icons;
 
   const MCPToolDefinition({
     required this.name,
     required this.description,
+    this.title,
     this.inputSchema,
+    this.annotations,
+    this.icons,
   });
 
   factory MCPToolDefinition.fromJson(Map<String, dynamic> json) =>
       MCPToolDefinition(
         name: json['name'] as String,
         description: json['description'] as String,
+        title: json['title'] as String?,
         inputSchema: json['inputSchema'] as Map<String, dynamic>?,
+        annotations: json['annotations'] != null
+            ? MCPToolAnnotations.fromJson(
+                json['annotations'] as Map<String, dynamic>,
+              )
+            : null,
+        icons: (json['icons'] as List<dynamic>?)
+            ?.map((icon) => MCPIcon.fromJson(icon as Map<String, dynamic>))
+            .toList(),
       );
 
   Map<String, dynamic> toJson() {
-    // Always include inputSchema with proper JSON Schema format
-    // Empty or null schemas become {"type": "object", "properties": {}}
     final schema = inputSchema;
     final normalizedSchema = (schema == null || schema.isEmpty)
         ? {'type': 'object', 'properties': <String, dynamic>{}}
@@ -131,8 +195,11 @@ class MCPToolDefinition {
 
     return {
       'name': name,
+      if (title != null) 'title': title,
       'description': description,
       'inputSchema': normalizedSchema,
+      if (annotations != null) 'annotations': annotations!.toJson(),
+      if (icons != null) 'icons': icons!.map((icon) => icon.toJson()).toList(),
     };
   }
 }
@@ -142,13 +209,17 @@ class MCPResourceDefinition {
   final String uri;
   final String name;
   final String description;
+  final String? title;
   final String? mimeType;
+  final List<MCPIcon>? icons;
 
   const MCPResourceDefinition({
     required this.uri,
     required this.name,
     required this.description,
+    this.title,
     this.mimeType,
+    this.icons,
   });
 
   factory MCPResourceDefinition.fromJson(Map<String, dynamic> json) =>
@@ -156,14 +227,20 @@ class MCPResourceDefinition {
         uri: json['uri'] as String,
         name: json['name'] as String,
         description: json['description'] as String,
+        title: json['title'] as String?,
         mimeType: json['mimeType'] as String?,
+        icons: (json['icons'] as List<dynamic>?)
+            ?.map((icon) => MCPIcon.fromJson(icon as Map<String, dynamic>))
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
     'uri': uri,
     'name': name,
+    if (title != null) 'title': title,
     'description': description,
     if (mimeType != null) 'mimeType': mimeType,
+    if (icons != null) 'icons': icons!.map((icon) => icon.toJson()).toList(),
   };
 }
 
@@ -171,30 +248,40 @@ class MCPResourceDefinition {
 class MCPPromptDefinition {
   final String name;
   final String description;
+  final String? title;
   final List<MCPPromptArgument>? arguments;
+  final List<MCPIcon>? icons;
 
   const MCPPromptDefinition({
     required this.name,
     required this.description,
+    this.title,
     this.arguments,
+    this.icons,
   });
 
   factory MCPPromptDefinition.fromJson(Map<String, dynamic> json) =>
       MCPPromptDefinition(
         name: json['name'] as String,
         description: json['description'] as String,
+        title: json['title'] as String?,
         arguments: (json['arguments'] as List<dynamic>?)
             ?.map(
               (arg) => MCPPromptArgument.fromJson(arg as Map<String, dynamic>),
             )
             .toList(),
+        icons: (json['icons'] as List<dynamic>?)
+            ?.map((icon) => MCPIcon.fromJson(icon as Map<String, dynamic>))
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
     'name': name,
+    if (title != null) 'title': title,
     'description': description,
     if (arguments != null)
       'arguments': arguments!.map((arg) => arg.toJson()).toList(),
+    if (icons != null) 'icons': icons!.map((icon) => icon.toJson()).toList(),
   };
 }
 
@@ -364,19 +451,70 @@ class MCPResourceAnnotations {
   };
 }
 
+/// Resource link returned from a tool result.
+class MCPResourceLink {
+  final String uri;
+  final String name;
+  final String? title;
+  final String? description;
+  final String? mimeType;
+
+  const MCPResourceLink({
+    required this.uri,
+    required this.name,
+    this.title,
+    this.description,
+    this.mimeType,
+  });
+
+  factory MCPResourceLink.fromJson(Map<String, dynamic> json) =>
+      MCPResourceLink(
+        uri: json['uri'] as String,
+        name: json['name'] as String,
+        title: json['title'] as String?,
+        description: json['description'] as String?,
+        mimeType: json['mimeType'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'uri': uri,
+    'name': name,
+    if (title != null) 'title': title,
+    if (description != null) 'description': description,
+    if (mimeType != null) 'mimeType': mimeType,
+  };
+}
+
 /// Tool result
 class MCPToolResult {
   final dynamic content;
   final bool isError;
+  final Object? structuredContent;
+  final List<MCPResourceLink>? resourceLinks;
 
-  const MCPToolResult({required this.content, this.isError = false});
+  const MCPToolResult({
+    required this.content,
+    this.isError = false,
+    this.structuredContent,
+    this.resourceLinks,
+  });
 
   factory MCPToolResult.fromJson(Map<String, dynamic> json) => MCPToolResult(
     content: json['content'],
     isError: json['isError'] as bool? ?? false,
+    structuredContent: json['structuredContent'],
+    resourceLinks: (json['resourceLinks'] as List<dynamic>?)
+        ?.map((link) => MCPResourceLink.fromJson(link as Map<String, dynamic>))
+        .toList(),
   );
 
-  Map<String, dynamic> toJson() => {'content': content, 'isError': isError};
+  Map<String, dynamic> toJson() => {
+    'content': content,
+    'isError': isError,
+    if (structuredContent != null) 'structuredContent': structuredContent,
+    if (resourceLinks != null)
+      'resourceLinks': resourceLinks!.map((link) => link.toJson()).toList(),
+  };
 }
 
 // =============================================================================

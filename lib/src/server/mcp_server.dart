@@ -78,7 +78,7 @@ abstract class MCPServer {
   MCPServer({
     required this.name,
     this.version = '1.0.0',
-    this.protocolVersion = '2025-06-18',
+    this.protocolVersion = '2025-11-25',
     this.description,
     this.allowedOrigins = const [],
     this.validateOrigins = false,
@@ -116,12 +116,18 @@ abstract class MCPServer {
     String name,
     MCPToolHandler handler, {
     String description = '',
+    String? title,
     Map<String, Object?>? inputSchema,
+    MCPToolAnnotations? annotations,
+    List<MCPIcon>? icons,
   }) {
     _tools[name] = MCPToolDefinition(
       name: name,
       description: description,
+      title: title,
       inputSchema: inputSchema,
+      annotations: annotations,
+      icons: icons,
     );
     _toolHandlers[name] = handler;
     _logger.info('Registered tool: $name');
@@ -132,14 +138,18 @@ abstract class MCPServer {
     String name,
     MCPResourceHandler handler, {
     String description = '',
+    String? title,
     String? mimeType,
+    List<MCPIcon>? icons,
   }) {
     final uri = 'mcp://$name';
     _resources[uri] = MCPResourceDefinition(
       uri: uri,
       name: name,
       description: description,
+      title: title,
       mimeType: mimeType,
+      icons: icons,
     );
     _resourceHandlers[uri] = handler;
     _logger.info('Registered resource: $name');
@@ -150,12 +160,16 @@ abstract class MCPServer {
     String name,
     MCPPromptHandler handler, {
     String description = '',
+    String? title,
     List<MCPPromptArgument>? arguments,
+    List<MCPIcon>? icons,
   }) {
     _prompts[name] = MCPPromptDefinition(
       name: name,
       description: description,
+      title: title,
       arguments: arguments,
+      icons: icons,
     );
     _promptHandlers[name] = handler;
     _logger.info('Registered prompt: $name');
@@ -268,7 +282,10 @@ abstract class MCPServer {
     }
 
     try {
-      final arguments = params['arguments'] as Map<String, Object?>? ?? {};
+      final rawArguments = params['arguments'];
+      final arguments = rawArguments is Map
+          ? Map<String, Object?>.from(rawArguments)
+          : <String, Object?>{};
       final context = MCPToolContext(
         arguments,
         toolName,
@@ -276,6 +293,19 @@ abstract class MCPServer {
         headers: request.headers,
       );
       final result = await handler(context);
+
+      if (result is MCPToolResult) {
+        return _successResponse(request.id, {
+          'content': _resultToContent(result.content),
+          if (result.structuredContent != null)
+            'structuredContent': result.structuredContent,
+          if (result.resourceLinks != null)
+            'resourceLinks': result.resourceLinks!
+                .map((link) => link.toJson())
+                .toList(),
+          if (result.isError) 'isError': true,
+        });
+      }
 
       // Convert result to MCP content blocks
       final content = _resultToContent(result);
@@ -299,20 +329,6 @@ abstract class MCPServer {
     // Handle single MCPContent
     if (result is MCPContent) {
       return [result.toJson()];
-    }
-
-    // Handle List that might contain MCPContent mixed with other types
-    if (result is List) {
-      final contents = <Map<String, dynamic>>[];
-      for (final item in result) {
-        if (item is MCPContent) {
-          contents.add(item.toJson());
-        } else {
-          // Wrap non-MCPContent items as text
-          contents.add({'type': 'text', 'text': jsonEncode(item)});
-        }
-      }
-      return contents;
     }
 
     // Fallback: encode as JSON text (original behavior)
@@ -386,7 +402,10 @@ abstract class MCPServer {
     }
 
     try {
-      final arguments = params['arguments'] as Map<String, Object?>? ?? {};
+      final rawArguments = params['arguments'];
+      final arguments = rawArguments is Map
+          ? Map<String, Object?>.from(rawArguments)
+          : <String, Object?>{};
       final result = handler(arguments);
 
       return _successResponse(request.id, {

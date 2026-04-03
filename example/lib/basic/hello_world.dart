@@ -22,9 +22,29 @@ class HelloWorldMCP extends MCPServer {
       'greet',
       (context) async {
         final name = context.param<String>('name');
-        return 'Hello, $name! Welcome to MCP Dart! 👋';
+        final greeting = 'Hello, $name! Welcome to MCP Dart! 👋';
+
+        return MCPToolResult(
+          content: [TextContent(greeting)],
+          structuredContent: {
+            'greeting': greeting,
+            'recipient': name,
+            'language': 'en',
+          },
+        );
       },
       description: 'Greet someone by name',
+      title: 'Friendly Greeting',
+      annotations: MCPToolAnnotations(
+        readOnlyHint: true,
+        idempotentHint: true,
+      ),
+      icons: const [
+        MCPIcon(
+          src: 'https://example.com/icons/hello.svg',
+          mimeType: 'image/svg+xml',
+        ),
+      ],
       inputSchema: {
         'type': 'object',
         'properties': {
@@ -45,6 +65,17 @@ class HelloWorldMCP extends MCPServer {
         return 'Echo: $message';
       },
       description: 'Echo back a message',
+      title: 'Echo Message',
+      annotations: MCPToolAnnotations(
+        readOnlyHint: true,
+        idempotentHint: true,
+      ),
+      icons: const [
+        MCPIcon(
+          src: 'https://example.com/icons/echo.svg',
+          mimeType: 'image/svg+xml',
+        ),
+      ],
       inputSchema: {
         'type': 'object',
         'properties': {

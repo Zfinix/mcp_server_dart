@@ -8,7 +8,7 @@
 
 
 [![Dart](https://img.shields.io/badge/Dart-3.9%2B-blue.svg)](https://dart.dev)
-[![MCP Protocol](https://img.shields.io/badge/MCP-2025--06--18-green.svg)](https://modelcontextprotocol.io/)
+[![MCP Protocol](https://img.shields.io/badge/MCP-2025--11--25-green.svg)](https://modelcontextprotocol.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
@@ -26,7 +26,7 @@ A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **
 - **🔍 Type-safe**: Full Dart type safety with automatic parameter extraction
 - **📚 JSON Schema**: Automatic input schema generation from method signatures
 - **🧪 Fully tested**: Comprehensive test suite with JSON-RPC command validation
-- **⚡ Production ready**: Complete MCP 2025-06-18 protocol implementation with Relic HTTP server
+- **⚡ Production ready**: Current MCP 2025-11-25-aligned protocol implementation with Relic HTTP server
 - **🌐 Modern HTTP**: Built on Relic framework with middleware support, CORS, logging, and health checks
 - **🔧 Monitoring**: Built-in health check endpoints and connection monitoring
 - **📊 SSE Support**: Server-Sent Events for real-time streaming per MCP 2025-06-18 spec
@@ -300,7 +300,7 @@ if (args.contains('--stdio')) {
 - **Streamable HTTP**: Latest MCP 2025-06-18 spec with Server-Sent Events support
 - **Health Monitoring**: Built-in endpoints for production monitoring
 
-## 🌐 Streamable HTTP Transport (MCP 2025-06-18)
+## 🌐 Streamable HTTP Transport (MCP 2025-11-25 aligned)
 
 The MCP Dart framework now supports the latest **Streamable HTTP** transport specification:
 
@@ -743,7 +743,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📊 Project Status
 
-- ✅ **Core Framework**: Complete MCP 2025-06-18 implementation
+- ✅ **Core Framework**: MCP 2025-11-25-aligned implementation
 - ✅ **Code Generation**: Working build_runner integration  
 - ✅ **Transport Layer**: Stdio, HTTP, and Streamable HTTP support with [Relic framework](https://pub.dev/packages/relic)
 - ✅ **HTTP Server**: Production-ready server with middleware, CORS, logging, health checks

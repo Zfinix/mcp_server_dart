@@ -88,23 +88,29 @@ extension {{className}}Registration on {{className}} {
         {{returnStatement}};
       },
       description: '{{description}}',
-{{inputSchema}}
+{{title}}{{annotations}}{{icons}}{{inputSchema}}
     );''';
 
   static const String resourceHandlerTemplate =
       '''    // Register handler for @MCPResource('{{annotationName}}')
 {{methodDoc}}
-    {{serverPrefix}}registerResource('{{annotationName}}', (uri) async {
-      {{returnStatement}};
-    });''';
+    {{serverPrefix}}registerResource(
+      '{{annotationName}}',
+      (uri) async {
+        {{returnStatement}};
+      },
+{{title}}{{icons}}    );''';
 
   static const String promptHandlerTemplate =
       '''    // Register handler for @MCPPrompt('{{annotationName}}')
 {{methodDoc}}
-    {{serverPrefix}}registerPrompt('{{annotationName}}', (args) {
+    {{serverPrefix}}registerPrompt(
+      '{{annotationName}}',
+      (args) {
 {{parameterExtractions}}
-      {{returnStatement}};
-    });''';
+        {{returnStatement}};
+      },
+{{title}}{{icons}}    );''';
 
   /// Template for top-level function registration.
   ///

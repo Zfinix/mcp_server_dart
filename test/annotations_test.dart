@@ -160,7 +160,7 @@ void main() {
     test('should create param annotation with defaults', () {
       const kParam = param();
 
-      expect(kParam.required, isTrue);
+      expect(kParam.required, isNull);
       expect(kParam.description, equals(''));
       expect(kParam.type, isNull);
       expect(kParam.example, isNull);
@@ -178,7 +178,7 @@ void main() {
     test('should create param annotation with description', () {
       const kParam = param(description: 'The name of the user');
 
-      expect(kParam.required, isTrue);
+      expect(kParam.required, isNull);
       expect(kParam.description, equals('The name of the user'));
       expect(kParam.type, isNull);
       expect(kParam.example, isNull);
@@ -187,7 +187,7 @@ void main() {
     test('should create param annotation with type', () {
       const kParam = param(description: 'User age', type: 'integer');
 
-      expect(kParam.required, isTrue);
+      expect(kParam.required, isNull);
       expect(kParam.description, equals('User age'));
       expect(kParam.type, equals('integer'));
       expect(kParam.example, isNull);
@@ -200,7 +200,7 @@ void main() {
         example: 'user@example.com',
       );
 
-      expect(kParam.required, isTrue);
+      expect(kParam.required, isNull);
       expect(kParam.description, equals('User email address'));
       expect(kParam.type, equals('string'));
       expect(kParam.example, equals('user@example.com'));
@@ -229,7 +229,7 @@ void main() {
         example: complexExample,
       );
 
-      expect(kParam.required, isTrue);
+      expect(kParam.required, isNull);
       expect(kParam.description, equals('User object'));
       expect(kParam.type, equals('object'));
       expect(kParam.example, equals(complexExample));
@@ -244,7 +244,7 @@ void main() {
         example: listExample,
       );
 
-      expect(kParam.required, isTrue);
+      expect(kParam.required, isNull);
       expect(kParam.description, equals('User roles'));
       expect(kParam.type, equals('array'));
       expect(kParam.example, equals(listExample));
@@ -332,7 +332,7 @@ void main() {
       expect(minimalPrompt.name, equals('minimal'));
       expect(minimalPrompt.description, isEmpty);
 
-      expect(minimalParam.required, isTrue);
+      expect(minimalParam.required, isNull);
       expect(minimalParam.description, isEmpty);
     });
   });
