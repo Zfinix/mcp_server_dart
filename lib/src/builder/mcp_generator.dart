@@ -58,8 +58,9 @@ class MCPGenerator extends Generator {
 
     bool hasAnyMCPAnnotations = false;
 
-    // Find MCPServer subclass (if any) in this library
-    String? mcpServerClassName;
+    // Find the most concrete MCPServer subclass (if any) in this library
+    ClassElement? mcpServerClass;
+    int mcpServerDepth = -1;
     List<MethodElement> mcpServerMethods = [];
 
     // Collect annotated top-level functions defined in THIS library
@@ -86,8 +87,12 @@ class MCPGenerator extends Generator {
             .toList();
 
         if (isMCPServer) {
-          mcpServerClassName = className;
-          mcpServerMethods = annotatedMethods;
+          final depth = _inheritanceDepth(element);
+          if (depth > mcpServerDepth) {
+            mcpServerClass = element;
+            mcpServerDepth = depth;
+            mcpServerMethods = annotatedMethods;
+          }
         } else if (annotatedMethods.isNotEmpty) {
           // Non-MCPServer class with annotated methods — generate its own
           // extension as before.
@@ -106,7 +111,7 @@ class MCPGenerator extends Generator {
       }
     }
 
-    if (mcpServerClassName != null) {
+    if (mcpServerClass != null) {
       // MCPServer subclass found — scan imported libraries for annotated
       // top-level functions and merge everything into one extension.
       final importedFunctions = _collectImportedAnnotatedFunctions(
@@ -121,7 +126,7 @@ class MCPGenerator extends Generator {
         hasAnyMCPAnnotations = true;
         buffer.writeln(
           _generateExtension(
-            mcpServerClassName,
+            mcpServerClass!.name!,
             mcpServerMethods,
             sourceFile,
             topLevelFunctions: allTopLevelFunctions,
@@ -385,38 +390,40 @@ class MCPGenerator extends Generator {
         },
       );
     } else if (annotationType == 'MCPResource') {
-      // For resources, check if method expects uri parameter
-      final expectsUri =
-          method.formalParameters.isNotEmpty &&
-          method.formalParameters.any((p) => p.name == 'uri');
+      final args = <String>[];
+      for (final p in method.formalParameters) {
+        if (p.name == null) continue;
+        if (_isMCPServerParam(p)) {
+          if (mcpServerExpression != null) {
+            args.add(mcpServerExpression);
+          } else {
+            final pType = _getTypeString(p.type);
+            args.add(pType == 'MCPServer' ? 'server' : 'server as $pType');
+          }
+        } else if (p.name == 'uri') {
+          args.add('uri');
+        }
+      }
 
-      if (expectsUri) {
-        if (method.returnType.toString().contains('Future')) {
-          returnStatement = 'return await $methodName(uri)';
-        } else {
-          returnStatement = 'return $methodName(uri)';
-        }
+      final callArgs = args.join(', ');
+      final callExpr = method.returnType.toString().contains('Future')
+          ? 'await $methodName($callArgs)'
+          : '$methodName($callArgs)';
+
+      final returnsResourceContent =
+          method.returnType.toString().contains('MCPResourceContent');
+
+      if (returnsResourceContent) {
+        returnStatement = 'return $callExpr';
       } else {
-        // Method doesn't expect uri parameter, call without it
-        if (method.returnType.toString().contains('Future')) {
-          returnStatement =
-              '''final result = await $methodName();
+        returnStatement =
+            '''final result = $callExpr;
         return MCPResourceContent(
           uri: uri,
           name: '$annotationName',
           mimeType: 'application/json',
           text: jsonEncode(result),
         )''';
-        } else {
-          returnStatement =
-              '''final result = $methodName();
-        return MCPResourceContent(
-          uri: uri,
-          name: '$annotationName',
-          mimeType: 'application/json',
-          text: jsonEncode(result),
-        )''';
-        }
       }
 
       return TemplateEngine.renderTemplateFromString(
@@ -430,17 +437,34 @@ class MCPGenerator extends Generator {
       );
     } else if (annotationType == 'MCPPrompt') {
       // For prompts, check if method takes Map<String, dynamic> directly
+      final nonServerParams = method.formalParameters
+          .where((p) => !_isMCPServerParam(p))
+          .toList();
       final hasMapParameter =
-          method.formalParameters.length == 1 &&
-          method.formalParameters.first.type.toString().contains(
+          nonServerParams.length == 1 &&
+          nonServerParams.first.type.toString().contains(
             'Map<String, dynamic>',
           );
 
       if (hasMapParameter) {
-        returnStatement = 'return $methodName(args)';
+        final callArgs = <String>[];
+        for (final p in method.formalParameters) {
+          if (_isMCPServerParam(p)) {
+            if (mcpServerExpression != null) {
+              callArgs.add(mcpServerExpression);
+            } else {
+              final pType = _getTypeString(p.type);
+              callArgs.add(pType == 'MCPServer' ? 'server' : 'server as $pType');
+            }
+          } else {
+            callArgs.add('args');
+          }
+        }
+        returnStatement = 'return $methodName(${callArgs.join(', ')})';
       } else {
         // Extract individual parameters from args Map
         final extractions = method.formalParameters
+            .where((param) => !_isMCPServerParam(param))
             .map((param) {
               final paramName = param.name;
               if (paramName == null) return '';
@@ -463,18 +487,43 @@ class MCPGenerator extends Generator {
         parameterExtractions = extractions;
 
         // Generate method call
-        final positionalArgs = method.formalParameters
-            .where((p) => p.isRequiredPositional && p.name != null)
-            .map((p) => p.name!)
-            .join(', ');
+        final positionalArgs = <String>[];
+        for (final p in method.formalParameters) {
+          if (!p.isRequiredPositional || p.name == null) continue;
+          if (_isMCPServerParam(p)) {
+            if (mcpServerExpression != null) {
+              positionalArgs.add(mcpServerExpression);
+            } else {
+              final pType = _getTypeString(p.type);
+              positionalArgs.add(pType == 'MCPServer' ? 'server' : 'server as $pType');
+            }
+          } else {
+            positionalArgs.add(p.name!);
+          }
+        }
         final namedArgs = method.formalParameters
-            .where((p) => p.isNamed && p.name != null)
+            .where(
+              (p) =>
+                  p.isNamed && p.name != null && !_isMCPServerParam(p),
+            )
             .map((p) => '${p.name}: ${p.name}')
-            .join(', ');
+            .toList();
+        for (final p in method.formalParameters.where(_isMCPServerParam)) {
+          final pName = p.name;
+          if (pName == null || !p.isNamed) continue;
+          if (mcpServerExpression != null) {
+            namedArgs.add('$pName: $mcpServerExpression');
+          } else {
+            final pType = _getTypeString(p.type);
+            namedArgs.add(
+              '$pName: ${pType == 'MCPServer' ? 'server' : 'server as $pType'}',
+            );
+          }
+        }
 
         final args = [
-          if (positionalArgs.isNotEmpty) positionalArgs,
-          if (namedArgs.isNotEmpty) namedArgs,
+          if (positionalArgs.isNotEmpty) positionalArgs.join(', '),
+          if (namedArgs.isNotEmpty) namedArgs.join(', '),
         ].join(', ');
 
         returnStatement = 'return $methodName($args)';
@@ -885,6 +934,19 @@ class MCPGenerator extends Generator {
       current = current.superclass;
     }
     return false;
+  }
+
+  /// Measure how deep a class is in its superclass chain.
+  ///
+  /// Used to prefer the most concrete MCPServer subclass in a library.
+  int _inheritanceDepth(ClassElement element) {
+    var depth = 0;
+    InterfaceType? current = element.supertype;
+    while (current != null) {
+      depth++;
+      current = current.superclass;
+    }
+    return depth;
   }
 
   /// Scan all libraries imported by [libraryElement] and collect annotated
