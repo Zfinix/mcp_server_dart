@@ -988,6 +988,14 @@ class MCPGenerator extends Generator {
         'description': '${_capitalizeFirst(paramName)} parameter',
       };
 
+      // Add items schema for array types
+      if (jsonType == 'array') {
+        final itemType = _extractListItemType(paramType);
+        if (itemType != null) {
+          property['items'] = {'type': itemType};
+        }
+      }
+
       // Extract MCPParam annotation data if available
       final mcpParamData = _extractMCPParamData(param);
       if (mcpParamData != null) {
@@ -1039,6 +1047,17 @@ class MCPGenerator extends Generator {
     };
 
     return _mapToString(schema);
+  }
+
+  /// Extract the JSON Schema item type from a Dart List<T> type string.
+  /// Returns null if the item type cannot be determined.
+  String? _extractListItemType(String dartType) {
+    final normalized = dartType.trim().replaceAll('?', '');
+    final match = RegExp(r'[Ll]ist<(.+)>').firstMatch(normalized);
+    if (match != null) {
+      return _dartTypeToJsonType(match.group(1)!);
+    }
+    return null;
   }
 
   /// Convert Dart type to JSON Schema type
