@@ -399,16 +399,30 @@ class MCPToolContext {
     Map<String, String>? headers,
   }) : _headers = headers;
 
+  /// Coerce a value to the expected type where possible.
+  /// Currently handles bool ↔ String coercion so MCP clients that send
+  /// "true"/"false" as strings work correctly.
+  static dynamic _coerce(dynamic value, Type targetType) {
+    if (value is String &&
+        (targetType == bool || targetType.toString().contains('bool'))) {
+      final lower = value.toLowerCase().trim();
+      if (lower == 'true') return true;
+      if (lower == 'false') return false;
+    }
+    return value;
+  }
+
   T param<T>(String name, {T? defaultValue}) {
-    final value = _params[name];
-    if (value == null) {
+    final raw = _params[name];
+    if (raw == null) {
       if (defaultValue != null) return defaultValue;
       throw ArgumentError('Required parameter "$name" is missing');
     }
 
+    final value = _coerce(raw, T);
     if (value is! T) {
       throw ArgumentError(
-        'Parameter "$name" expected type $T but got ${value.runtimeType}',
+        'Parameter "$name" expected type $T but got ${raw.runtimeType}',
       );
     }
 
@@ -416,7 +430,9 @@ class MCPToolContext {
   }
 
   T? optionalParam<T>(String name) {
-    final value = _params[name];
+    final raw = _params[name];
+    if (raw == null) return null;
+    final value = _coerce(raw, T);
     return value is T ? value : null;
   }
 
