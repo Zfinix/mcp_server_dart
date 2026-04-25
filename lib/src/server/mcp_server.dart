@@ -647,6 +647,13 @@ abstract class MCPServer {
       return [result.toJson()];
     }
 
+    // String tools already return serialized JSON — use as-is.
+    if (result is String) {
+      return [
+        {'type': 'text', 'text': result},
+      ];
+    }
+
     return [
       {'type': 'text', 'text': jsonEncode(result)},
     ];
