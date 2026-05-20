@@ -426,7 +426,7 @@ void main() {
             method: 'initialize',
             id: 'init_1',
             params: {
-              'protocolVersion': '2025-06-18',
+              'protocolVersion': '2025-11-25',
               'capabilities': {
                 'tools': {'listChanged': true},
                 'resources': {'subscribe': true},
@@ -442,7 +442,7 @@ void main() {
           expect(response.error, isNull);
 
           final result = response.result as Map<String, dynamic>;
-          expect(result['protocolVersion'], equals('2025-06-18'));
+          expect(result['protocolVersion'], equals('2025-11-25'));
           expect(
             result['serverInfo']['name'],
             equals('production-test-server'),

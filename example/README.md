@@ -1,6 +1,8 @@
 # MCP Dart Framework Examples
 
-This directory contains examples demonstrating how to use the MCP Dart framework to build Model Context Protocol servers with annotation-based code generation.
+This directory contains examples demonstrating how to use the MCP Dart framework to build Model Context Protocol servers with manual registration and annotation-based code generation.
+
+The examples now highlight MCP 2025-11-25-aligned features such as tool/resource/prompt titles, icon metadata, tool behavior annotations, and structured tool results.
 
 ## 📁 Examples Included
 
@@ -175,7 +177,7 @@ All examples have been thoroughly tested with real JSON-RPC commands:
 2. **Send JSON-RPC messages:**
 
 ```json
-{"jsonrpc": "2.0", "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}}, "id": 1}
+{"jsonrpc": "2.0", "method": "initialize", "params": {"protocolVersion": "2025-11-25", "capabilities": {}}, "id": 1}
 {"jsonrpc": "2.0", "method": "tools/list", "id": 2}
 {"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "greet", "arguments": {"name": "World"}}, "id": 3}
 ```
@@ -193,15 +195,15 @@ Your server can be used with any MCP-compatible client:
 
 ### Available Annotations
 
-- **`@MCPTool(name, description: '...')`** - Marks a method as a callable tool
-- **`@MCPResource(name, description: '...', mimeType: '...')`** - Marks a method as a readable resource
-- **`@MCPPrompt(name, description: '...', arguments: [...])`** - Marks a method as a prompt template
-- **`@MCPParam(required: true, description: '...', example: ...)`** - Provides parameter metadata
+- **`@MCPTool(name, description: '...', title: '...', icons: [...], annotations: {...})`** - Marks a method as a callable tool with optional MCP metadata
+- **`@MCPResource(name, description: '...', title: '...', mimeType: '...', icons: [...])`** - Marks a method as a readable resource with optional display metadata
+- **`@MCPPrompt(name, description: '...', title: '...', arguments: [...], icons: [...])`** - Marks a method as a prompt template with optional display metadata
+- **`@MCPParam(required: ..., description: '...', example: ...)`** - Provides parameter metadata and can defer requiredness to Dart signatures when omitted
 
 ### Server Base Class
 
 The `MCPServer` base class provides:
-- **Protocol handling** - Complete MCP 2024-11-05 implementation
+- **Protocol handling** - MCP 2025-11-25-aligned implementation
 - **Transport support** - stdio and HTTP/WebSocket
 - **Type safety** - Automatic parameter extraction and validation
 - **Error handling** - Proper JSON-RPC error responses

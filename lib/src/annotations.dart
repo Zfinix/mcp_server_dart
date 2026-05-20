@@ -3,6 +3,12 @@
 
 library;
 
+// Type aliases for cleaner API - use @MCPTool, @MCPResource, @MCPPrompt, @MCPParam
+typedef MCPTool = tool;
+typedef MCPResource = resource;
+typedef MCPPrompt = prompt;
+typedef MCPParam = param;
+
 /// Annotation to mark a method as an MCP tool.
 ///
 /// Tools are functions that the LLM can call to perform actions or retrieve information.
@@ -22,10 +28,26 @@ class tool {
   /// A description of what this tool does
   final String description;
 
+  /// Optional human-friendly display title.
+  final String? title;
+
   /// Optional schema for input parameters (JSON Schema format)
   final Map<String, dynamic>? inputSchema;
 
-  const tool(this.name, {this.description = '', this.inputSchema});
+  /// Optional icon sources metadata.
+  final List<Map<String, dynamic>>? icons;
+
+  /// Optional tool behavior metadata hints.
+  final Map<String, dynamic>? annotations;
+
+  const tool(
+    this.name, {
+    this.description = '',
+    this.title,
+    this.inputSchema,
+    this.icons,
+    this.annotations,
+  });
 }
 
 /// Annotation to mark a method as an MCP resource.
@@ -51,10 +73,22 @@ class resource {
   /// A description of what this resource contains
   final String description;
 
+  /// Optional human-friendly display title.
+  final String? title;
+
   /// The MIME type of the resource content
   final String? mimeType;
 
-  const resource(this.name, {this.description = '', this.mimeType});
+  /// Optional icon sources metadata.
+  final List<Map<String, dynamic>>? icons;
+
+  const resource(
+    this.name, {
+    this.description = '',
+    this.title,
+    this.mimeType,
+    this.icons,
+  });
 }
 
 /// Annotation to mark a method as an MCP prompt.
@@ -75,16 +109,60 @@ class prompt {
   /// A description of what this prompt does
   final String description;
 
+  /// Optional human-friendly display title.
+  final String? title;
+
   /// Optional arguments that this prompt accepts
   final List<String>? arguments;
 
-  const prompt(this.name, {this.description = '', this.arguments});
+  /// Optional icon sources metadata.
+  final List<Map<String, dynamic>>? icons;
+
+  const prompt(
+    this.name, {
+    this.description = '',
+    this.title,
+    this.arguments,
+    this.icons,
+  });
 }
 
-/// Annotation to mark a parameter as required or provide additional metadata
+/// Annotation to mark a method as an MCP completion provider.
+///
+/// The [target] identifies the prompt or resource whose argument should be
+/// completed. Plain names like `classify` are treated as prompt names. Values
+/// starting with `mcp://` are treated as resource URIs.
+///
+/// Example:
+/// ```dart
+/// @MCPCompletion('classify')
+/// Future<MCPCompletionResult> completeClassify(
+///   MCPCompletionRequest request,
+/// ) async {
+///   return MCPCompletionResult(
+///     completion: MCPCompletionData(values: ['bug', 'feature']),
+///   );
+/// }
+/// ```
+class MCPCompletion {
+  /// Prompt name or resource URI to attach this completion provider to.
+  final String target;
+
+  const MCPCompletion(this.target);
+}
+
+typedef completion = MCPCompletion;
+
+/// Annotation to mark a parameter as required or provide additional metadata.
+///
+/// By default, the generator uses Dart's type system to determine if a parameter
+/// is required (positional params and `required` named params are required,
+/// optional named params and nullable types are optional). Use this annotation
+/// to override that behavior or provide additional metadata.
 class param {
-  /// Whether this parameter is required
-  final bool required;
+  /// Whether this parameter is required. If null, uses Dart's type inference
+  /// (positional params and `required` named params are required).
+  final bool? required;
 
   /// Description of the parameter
   final String description;
@@ -95,10 +173,5 @@ class param {
   /// Example value for this parameter
   final dynamic example;
 
-  const param({
-    this.required = true,
-    this.description = '',
-    this.type,
-    this.example,
-  });
+  const param({this.required, this.description = '', this.type, this.example});
 }

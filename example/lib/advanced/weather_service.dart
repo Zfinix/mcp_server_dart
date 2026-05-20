@@ -31,6 +31,18 @@ class WeatherServiceMCP extends MCPServer {
   @tool(
     'get_current_weather',
     description: 'Get current weather for a location',
+    title: 'Current Weather',
+    icons: [
+      {
+        'src': 'https://example.com/icons/weather-current.svg',
+        'mimeType': 'image/svg+xml',
+      },
+    ],
+    annotations: {
+      'readOnlyHint': true,
+      'idempotentHint': true,
+      'openWorldHint': true,
+    },
   )
   Future<Map<String, dynamic>> getCurrentWeather(
     @param(description: 'City name or coordinates', example: 'San Francisco')
@@ -88,14 +100,28 @@ class WeatherServiceMCP extends MCPServer {
     return result;
   }
 
-  @tool('get_weather_alerts', description: 'Get weather alerts for a location')
+  @tool(
+    'get_weather_alerts',
+    description: 'Get weather alerts for a location',
+    title: 'Weather Alerts',
+    icons: [
+      {
+        'src': 'https://example.com/icons/weather-alert.svg',
+        'mimeType': 'image/svg+xml',
+      },
+    ],
+    annotations: {
+      'readOnlyHint': true,
+      'idempotentHint': true,
+      'openWorldHint': true,
+    },
+  )
   Future<List<Map<String, dynamic>>> getWeatherAlerts(
     @param(description: 'Location to check for alerts') String location, {
     @param(required: false, description: 'Alert severity filter')
     String? severity,
     MCPToolContext? context,
   }) async {
-    print(context?.headers);
     // Access headers from context
     // Example: final authHeader = context?.header('authorization');
     // Example: final allHeaders = context?.headers;
@@ -128,7 +154,22 @@ class WeatherServiceMCP extends MCPServer {
     return alerts;
   }
 
-  @tool('search_locations', description: 'Search for weather locations')
+  @tool(
+    'search_locations',
+    description: 'Search for weather locations',
+    title: 'Search Locations',
+    icons: [
+      {
+        'src': 'https://example.com/icons/location-search.svg',
+        'mimeType': 'image/svg+xml',
+      },
+    ],
+    annotations: {
+      'readOnlyHint': true,
+      'idempotentHint': true,
+      'openWorldHint': true,
+    },
+  )
   Future<List<Map<String, dynamic>>> searchLocations(
     @param(description: 'Search query for locations') String query, {
     @param(required: false, description: 'Maximum number of results')
@@ -170,7 +211,14 @@ class WeatherServiceMCP extends MCPServer {
   @resource(
     'weather_stations',
     description: 'Available weather monitoring stations',
+    title: 'Weather Stations',
     mimeType: 'application/json',
+    icons: [
+      {
+        'src': 'https://example.com/icons/weather-station.svg',
+        'mimeType': 'image/svg+xml',
+      },
+    ],
   )
   Future<MCPResourceContent> getWeatherStations(String uri) async {
     final stations = {
@@ -229,7 +277,14 @@ class WeatherServiceMCP extends MCPServer {
   @prompt(
     'weather_report',
     description: 'Generate weather report templates',
+    title: 'Weather Report Prompt',
     arguments: ['location', 'format', 'audience'],
+    icons: [
+      {
+        'src': 'https://example.com/icons/weather-report.svg',
+        'mimeType': 'image/svg+xml',
+      },
+    ],
   )
   String weatherReportPrompt(Map<String, dynamic> args) {
     final location = args['location'] ?? 'your area';

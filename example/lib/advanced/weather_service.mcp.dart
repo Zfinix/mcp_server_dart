@@ -35,6 +35,18 @@ extension WeatherServiceMCPRegistration on WeatherServiceMCP {
         );
       },
       description: 'Get current weather for a location',
+      title: 'Current Weather',
+      annotations: MCPToolAnnotations(
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      ),
+      icons: [
+        MCPIcon(
+          src: 'https://example.com/icons/weather-current.svg',
+          mimeType: 'image/svg+xml',
+        ),
+      ],
       inputSchema: {
         'type': 'object',
         'properties': {
@@ -71,6 +83,18 @@ extension WeatherServiceMCPRegistration on WeatherServiceMCP {
         );
       },
       description: 'Get weather alerts for a location',
+      title: 'Weather Alerts',
+      annotations: MCPToolAnnotations(
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      ),
+      icons: [
+        MCPIcon(
+          src: 'https://example.com/icons/weather-alert.svg',
+          mimeType: 'image/svg+xml',
+        ),
+      ],
       inputSchema: {
         'type': 'object',
         'properties': {
@@ -97,6 +121,18 @@ extension WeatherServiceMCPRegistration on WeatherServiceMCP {
         return await searchLocations(query, limit: limit);
       },
       description: 'Search for weather locations',
+      title: 'Search Locations',
+      annotations: MCPToolAnnotations(
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      ),
+      icons: [
+        MCPIcon(
+          src: 'https://example.com/icons/location-search.svg',
+          mimeType: 'image/svg+xml',
+        ),
+      ],
       inputSchema: {
         'type': 'object',
         'properties': {
@@ -115,15 +151,35 @@ extension WeatherServiceMCPRegistration on WeatherServiceMCP {
 
     // Register handler for @MCPResource('weather_stations')
 
-    registerResource('weather_stations', (uri) async {
-      return await getWeatherStations(uri);
-    });
+    registerResource(
+      'weather_stations',
+      (uri) async {
+        return await getWeatherStations(uri);
+      },
+      title: 'Weather Stations',
+      icons: [
+        MCPIcon(
+          src: 'https://example.com/icons/weather-station.svg',
+          mimeType: 'image/svg+xml',
+        ),
+      ],
+    );
 
     // Register handler for @MCPPrompt('weather_report')
 
-    registerPrompt('weather_report', (args) {
-      return weatherReportPrompt(args);
-    });
+    registerPrompt(
+      'weather_report',
+      (args) {
+        return weatherReportPrompt(args);
+      },
+      title: 'Weather Report Prompt',
+      icons: [
+        MCPIcon(
+          src: 'https://example.com/icons/weather-report.svg',
+          mimeType: 'image/svg+xml',
+        ),
+      ],
+    );
   }
 
   /// Generates standardized usage documentation for MCP servers.

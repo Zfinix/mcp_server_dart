@@ -62,7 +62,7 @@ void main() {
       sessionManager.removeSseSession(sessionId);
 
       expect(sessionManager.getSessionHeaders(sessionId), isNull);
-      
+
       controller.close();
     });
 
@@ -96,4 +96,3 @@ void main() {
     });
   });
 }
-

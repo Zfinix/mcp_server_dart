@@ -380,9 +380,11 @@ class HttpHandlers {
         );
 
         final response = await handleRequest(mcpRequest);
-        if (sessionId == null) {
-          sessionId = _sessionManager.generateSessionId();
+        sessionId ??= _sessionManager.generateSessionId();
+        if (!_sessionManager.isValidSession(sessionId)) {
           _sessionManager.createSession(sessionId);
+        } else {
+          _sessionManager.updateSession(sessionId);
         }
         return Response.ok(
           body: Body.fromString(
@@ -425,7 +427,7 @@ class HttpHandlers {
           jsonEncode(response.toJson()),
           mimeType: MimeType.json,
         ),
-        headers: _mcpHeaders(),
+        headers: _mcpHeaders(sessionId: sessionId),
       );
     } catch (e, stackTrace) {
       _logger.severe('Error in MCP POST handler: $e', e, stackTrace);
