@@ -154,7 +154,40 @@ void main() {
 
         final textContent = content.first as Map<String, dynamic>;
         expect(textContent['type'], equals('text'));
-        expect(jsonDecode(textContent['text']), equals('Hello, World!'));
+        // String results are sent as-is, not JSON-encoded a second time.
+        expect(textContent['text'], equals('Hello, World!'));
+      });
+
+      test('should send String results as-is and JSON-encode others', () async {
+        server.registerTool(
+          'string_json',
+          (context) async => '{"ok":true}',
+          description: 'Returns a String that is already JSON',
+        );
+        server.registerTool(
+          'map_result',
+          (context) async => {'ok': true},
+          description: 'Returns a Map',
+        );
+
+        Future<String> textOf(String tool) async {
+          final response = await server.handleRequest(
+            MCPRequest(
+              method: 'tools/call',
+              id: tool,
+              params: {'name': tool, 'arguments': {}},
+            ),
+          );
+          expect(response.error, isNull);
+          final content =
+              (response.result as Map<String, dynamic>)['content'] as List;
+          return (content.single as Map<String, dynamic>)['text'] as String;
+        }
+
+        // A String is never wrapped in quotes, even when it holds JSON.
+        expect(await textOf('string_json'), equals('{"ok":true}'));
+        // Anything else is serialized with jsonEncode.
+        expect(await textOf('map_result'), equals('{"ok":true}'));
       });
 
       test('should return error for missing tool', () async {
@@ -221,7 +254,7 @@ void main() {
         final result = response.result as Map<String, dynamic>;
         final content = result['content'] as List<dynamic>;
         final textContent = content.first as Map<String, dynamic>;
-        final resultText = jsonDecode(textContent['text']) as String;
+        final resultText = textContent['text'] as String;
         expect(resultText, contains('Hello, World!'));
         expect(resultText, contains('Bearer test-token'));
         expect(resultText, contains('test-123'));

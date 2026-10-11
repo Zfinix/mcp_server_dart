@@ -7,7 +7,7 @@ import 'dart:typed_data';
 
 import 'package:logging/logging.dart';
 import 'package:mcp_server_dart/src/server/middleware.dart';
-import 'package:relic/relic.dart';
+import 'package:relic/relic.dart' hide Logger;
 import 'package:web_socket/web_socket.dart';
 
 import 'package:mcp_server_dart/src/protocol/types.dart';
@@ -550,7 +550,7 @@ class HttpHandlers {
 
 extension RequestIdExtension on Request {
   /// Get the request ID from the request context
-  Map<String, String> get mcpHeaders => _webSocketHeadersProperty[this];
+  Map<String, String> get mcpHeaders => _webSocketHeadersProperty.get(this);
 }
 
 /// Context property for storing headers in WebSocket connections

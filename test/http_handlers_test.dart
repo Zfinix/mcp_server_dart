@@ -5,7 +5,6 @@ import 'package:mcp_server_dart/src/protocol/types.dart';
 import 'package:mcp_server_dart/src/server/http_handlers.dart';
 import 'package:mcp_server_dart/src/server/session_manager.dart';
 import 'package:relic/relic.dart';
-import 'package:relic/src/context/context.dart';
 import 'package:test/test.dart';
 
 Request _request(

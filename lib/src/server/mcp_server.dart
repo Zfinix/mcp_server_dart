@@ -6,8 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:logging/logging.dart';
-import 'package:relic/io_adapter.dart';
-import 'package:relic/relic.dart';
+import 'package:relic/relic.dart' hide Logger;
 
 import 'package:mcp_server_dart/src/protocol/types.dart';
 import 'http_handlers.dart';

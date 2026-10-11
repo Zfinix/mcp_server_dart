@@ -1,3 +1,11 @@
+## 1.5.0
+
+- ⬆️ **Current build tooling**: Code generation runs on `analyzer` ^14.5.0 (was ^8.1.1) with `source_gen` ^4.3.0, `build` ^4.0.11 and `dart_style` ^3.1.13, so projects can use `build_runner` ^2.16.2 alongside `mcp_server_dart`. Generated `.mcp.dart` output is unchanged.
+- ⬆️ **relic 2.0.0-rc.2**: The HTTP transport moves from `relic` 0.10.0 to 2.0.0-rc.2. No `mcp_server_dart` API changes. If your project also depends on `relic` directly, it must move to relic 2. relic 2 exports its own `Logger`, so a file that imports both `package:relic/relic.dart` and `package:logging/logging.dart` needs `hide Logger` on one of them.
+- ⚠️ **Requires Dart 3.11 / Flutter 3.41**: The SDK constraint is now `^3.11.0` (was `^3.9.0`), because `analyzer` 14 requires it. On Flutter 3.38 or older (Dart 3.10 or older), pub keeps resolving 1.4.0. A project that pins `analyzer` below 14, directly or through another code generator, also stays on 1.4.0.
+- ⬆️ Dev dependencies: `build_runner` ^2.16.2, `json_serializable` ^6.14.1, `test` ^1.33.0; `json_annotation` ^4.12.0.
+- 🧪 Tests expect String tool results as plain text, matching the String-response behaviour introduced after 1.4.0, and a new test covers String vs JSON-encoded results.
+
 ## 1.4.0
 
 - 🧠 **Modern MCP capabilities**: Added first-class support for MCP logging, completions, task-augmented tool calls, `notifications/initialized`, and richer `initialize` metadata for `2025-11-25`

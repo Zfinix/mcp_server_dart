@@ -7,7 +7,7 @@
 </br>
 
 
-[![Dart](https://img.shields.io/badge/Dart-3.9%2B-blue.svg)](https://dart.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.11%2B-blue.svg)](https://dart.dev)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2025--11--25-green.svg)](https://modelcontextprotocol.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -38,12 +38,12 @@ A **developer-friendly MCP (Model Context Protocol) framework for Dart** with **
 
 ```yaml
 dependencies:
-  mcp_server_dart: ^1.1.2
-  relic: ^0.5.0  # Modern HTTP framework
+  mcp_server_dart: ^1.5.0  # Requires Dart 3.11+ (Flutter 3.41+)
+  relic: ^2.0.0-rc.2  # Modern HTTP framework
   logging: ^1.3.0  # For server logging
 
 dev_dependencies:
-  build_runner: ^2.4.13
+  build_runner: ^2.16.2
 ```
 
 ### 2. Create Your MCP Server

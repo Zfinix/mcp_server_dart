@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:logging/logging.dart';
-import 'package:relic/relic.dart';
+import 'package:relic/relic.dart' hide Logger;
 
 /// Session manager for handling HTTP sessions and SSE connections
 class SessionManager {

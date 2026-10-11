@@ -2,7 +2,7 @@
 library;
 
 import 'package:logging/logging.dart';
-import 'package:relic/relic.dart';
+import 'package:relic/relic.dart' hide Logger;
 
 /// Callback type for token validation
 typedef TokenValidator = Future<bool> Function(String token);

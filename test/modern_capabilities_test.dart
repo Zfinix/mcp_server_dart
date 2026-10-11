@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:logging/logging.dart';
 import 'package:mcp_server_dart/mcp_server_dart.dart';
@@ -296,7 +295,7 @@ void main() {
       final result = resultResponse.result as Map<String, dynamic>;
       final content = result['content'] as List<dynamic>;
       expect(
-        jsonDecode((content.first as Map<String, dynamic>)['text'] as String),
+        (content.first as Map<String, dynamic>)['text'] as String,
         equals('hello tasks'),
       );
     });
